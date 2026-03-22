@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
+import { useNavigation } from "@react-navigation/native";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { Directory, File } from "expo-file-system";
@@ -21,6 +22,7 @@ import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/dat
 import { useStore, QuoteRecord } from "../store/useStore";
 
 const ExportScreen = () => {
+  const navigation = useNavigation<any>();
   const {
     recentQuotes,
     businessName,
@@ -198,6 +200,15 @@ const ExportScreen = () => {
     </TouchableOpacity>
   );
 
+  const AddLink = ({ label }: { label: string }) => (
+    <TouchableOpacity 
+      style={styles.addButton} 
+      onPress={() => navigation.navigate('Settings')}
+    >
+      <Text style={styles.addButtonText}>+ Add {label}</Text>
+    </TouchableOpacity>
+  );
+
   if (selectedQuote) {
     /* View B: Invoice Setup Form */
     return (
@@ -210,12 +221,27 @@ const ExportScreen = () => {
           <Text style={styles.header}>Invoice Setup</Text>
 
           <Text style={styles.sectionTitle}>1. Business Details</Text>
-          <Text style={styles.helperText}>Select which details to display on this invoice.</Text>
+          <Text style={styles.helperText}>Toggle on/off to display on the invoice.</Text>
           <View style={styles.toggleGrid}>
             <ToggleItem label="Business Name" value={showBusinessName} onToggle={setShowBusinessName} />
-            <ToggleItem label="Email" value={showBusinessEmail} onToggle={setShowBusinessEmail} />
-            <ToggleItem label="Phone" value={showBusinessPhone} onToggle={setShowBusinessPhone} />
-            <ToggleItem label="Description" value={showBusinessDesc} onToggle={setShowBusinessDesc} />
+            
+            {businessEmail ? (
+              <ToggleItem label="Email" value={showBusinessEmail} onToggle={setShowBusinessEmail} />
+            ) : (
+              <AddLink label="Email" />
+            )}
+
+            {businessPhone ? (
+              <ToggleItem label="Phone" value={showBusinessPhone} onToggle={setShowBusinessPhone} />
+            ) : (
+              <AddLink label="Phone" />
+            )}
+
+            {businessDescription ? (
+              <ToggleItem label="Description" value={showBusinessDesc} onToggle={setShowBusinessDesc} />
+            ) : (
+              <AddLink label="Description" />
+            )}
           </View>
 
           <Text style={styles.sectionTitle}>2. Client Details</Text>
@@ -389,6 +415,8 @@ const styles = StyleSheet.create({
   toggleItemActive: { backgroundColor: "#007AFF", borderColor: "#007AFF" },
   toggleItemText: { fontSize: 13, color: "#666", fontWeight: "500" },
   toggleItemTextActive: { color: "#fff" },
+  addButton: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1, borderStyle: 'dashed', borderColor: "#007AFF", marginRight: 8, marginBottom: 8, backgroundColor: "transparent" },
+  addButtonText: { fontSize: 13, color: "#007AFF", fontWeight: "bold" },
   toggleRow: { flexDirection: "row", marginBottom: 8, borderRadius: 8, overflow: "hidden", borderWidth: 1, borderColor: "#007AFF" },
   toggleBtn: { flex: 1, padding: 12, alignItems: "center", backgroundColor: "#fff" },
   toggleBtnActive: { backgroundColor: "#007AFF" },
