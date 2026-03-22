@@ -15,6 +15,7 @@ interface StoreState {
   profitMargin: number;
   wearAndTearFee: number;
   materials: MaterialProfile[];
+  currentQuote: number | null;
   
   setElectricityRate: (rate: number) => void;
   setPrinterWattage: (wattage: number) => void;
@@ -23,6 +24,7 @@ interface StoreState {
   addMaterial: (material: Omit<MaterialProfile, "id">) => void;
   updateMaterial: (id: string, material: Partial<Omit<MaterialProfile, "id">>) => void;
   removeMaterial: (id: string) => void;
+  setCurrentQuote: (quote: number | null) => void;
 }
 
 export const useStore = create<StoreState>()(
@@ -33,11 +35,13 @@ export const useStore = create<StoreState>()(
       profitMargin: 50,
       wearAndTearFee: 0.50,
       materials: [],
+      currentQuote: null,
 
       setElectricityRate: (rate) => set({ electricityRate: rate }),
       setPrinterWattage: (wattage) => set({ printerWattage: wattage }),
       setProfitMargin: (margin) => set({ profitMargin: margin }),
       setWearAndTearFee: (fee) => set({ wearAndTearFee: fee }),
+      setCurrentQuote: (quote) => set({ currentQuote: quote }),
       
       addMaterial: (material) => set((state) => ({
         materials: [
