@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   SafeAreaView,
   Alert,
 } from "react-native";
-import { useStore, MaterialProfile } from "../store/useStore";
+import { useStore } from "../store/useStore";
 
 const CalculatorScreen = () => {
   const {
@@ -18,14 +18,14 @@ const CalculatorScreen = () => {
     printerWattage,
     profitMargin,
     wearAndTearFee,
-    currentQuote,
-    setCurrentQuote,
     addMaterial,
+    addQuoteToHistory,
   } = useStore();
 
   const [selectedMaterialId, setSelectedMaterialId] = useState<string | null>(null);
   const [printHours, setPrintHours] = useState("");
   const [modelWeight, setModelWeight] = useState("");
+  const [showSuccess, setShowSuccess] = useState(false);
 
   // "Add Quick Material" State
   const [isAddingMaterial, setIsAddingMaterial] = useState(false);
@@ -48,7 +48,7 @@ const CalculatorScreen = () => {
     const hours = parseFloat(printHours);
     const weight = parseFloat(modelWeight);
 
-    // Material Cost (Assuming Input weight is in the same unit as material price basis)
+    // Material Cost
     const materialCost = selectedMaterial.price * weight;
 
     // Electricity Cost = (kW) * ($/kWh) * (h)
@@ -60,7 +60,22 @@ const CalculatorScreen = () => {
     const baseCost = materialCost + electricityCost + wearAndTearCost;
     const finalQuote = baseCost * (1 + profitMargin / 100);
 
-    setCurrentQuote(finalQuote);
+    addQuoteToHistory({
+      materialName: selectedMaterial.name,
+      printTime: hours,
+      modelWeight: weight,
+      unit: selectedMaterial.unit,
+      materialCost,
+      electricityCost,
+      wearAndTearCost,
+      baseCost,
+      finalQuote,
+    });
+
+    setShowSuccess(true);
+    setPrintHours("");
+    setModelWeight("");
+    setTimeout(() => setShowSuccess(false), 3000);
   };
 
   const handleQuickAdd = () => {
@@ -162,11 +177,10 @@ const CalculatorScreen = () => {
           <Text style={styles.calculateButtonText}>Calculate Final Quote</Text>
         </TouchableOpacity>
 
-        {/* Section 4: Output */}
-        {currentQuote !== null && (
-          <View style={styles.resultCard}>
-            <Text style={styles.resultLabel}>Estimated Quote</Text>
-            <Text style={styles.resultValue}>${currentQuote.toFixed(2)}</Text>
+        {/* Section 4: Success Message */}
+        {showSuccess && (
+          <View style={styles.successMessage}>
+            <Text style={styles.successText}>Quote Saved to Export Tab!</Text>
           </View>
         )}
       </ScrollView>
@@ -211,9 +225,8 @@ const styles = StyleSheet.create({
   buttonText: { color: "#fff", fontWeight: "bold" },
   calculateButton: { backgroundColor: "#007AFF", padding: 18, borderRadius: 8, alignItems: "center", marginTop: 20 },
   calculateButtonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
-  resultCard: { backgroundColor: "#fff", padding: 24, borderRadius: 8, borderWidth: 2, borderColor: "#007AFF", marginTop: 24, alignItems: "center" },
-  resultLabel: { fontSize: 16, color: "#666", marginBottom: 8 },
-  resultValue: { fontSize: 42, fontWeight: "bold", color: "#007AFF" },
+  successMessage: { marginTop: 20, padding: 15, backgroundColor: "#d4edda", borderRadius: 8, alignItems: "center", borderWidth: 1, borderColor: "#c3e6cb" },
+  successText: { color: "#155724", fontWeight: "bold", fontSize: 16 },
 });
 
 export default CalculatorScreen;
