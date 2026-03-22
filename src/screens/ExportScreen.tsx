@@ -10,6 +10,7 @@ import {
   Platform,
   Modal,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
@@ -44,14 +45,23 @@ const ExportScreen = () => {
   const [showBusinessPhone, setShowBusinessPhone] = useState(true);
   const [showBusinessDesc, setShowBusinessDesc] = useState(true);
 
-  // Client Details Local State
+  // Client Details & Lock-in State
+  const [isEditingClient, setIsEditingClient] = useState(true);
   const [clientName, setClientName] = useState("");
   const [description, setDescription] = useState("");
+  const [date, setDate] = useState(new Date());
+  
+  // Temp Edit states
+  const [tmpClientName, setTmpClientName] = useState("");
+  const [tmpDescription, setTmpDescription] = useState("");
+  const [tmpDate, setTmpDate] = useState(new Date());
+
+  // Generation State (Labor Illusion)
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isGenerated, setIsGenerated] = useState(false);
   
   // Date Picker State
-  const [date, setDate] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
-  
   const [isDetailed, setIsDetailed] = useState(true);
   
   // Preview State
@@ -62,9 +72,45 @@ const ExportScreen = () => {
   }, []);
 
   const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    const currentDate = selectedDate || date;
+    const currentDate = selectedDate || tmpDate;
     setShowPicker(Platform.OS === 'ios');
-    setDate(currentDate);
+    setTmpDate(currentDate);
+  };
+
+  const handleSaveClientDetails = () => {
+    setClientName(tmpClientName);
+    setDescription(tmpDescription);
+    setDate(tmpDate);
+    setIsEditingClient(false);
+  };
+
+  const handleEditClientDetails = () => {
+    setTmpClientName(clientName);
+    setTmpDescription(description);
+    setTmpDate(date);
+    setIsEditingClient(true);
+    setIsGenerated(false); // Reset generated state if editing starts
+  };
+
+  const handleGenerateInvoice = () => {
+    setIsGenerating(true);
+    setTimeout(() => {
+      setIsGenerating(false);
+      setIsGenerated(true);
+    }, 1500);
+  };
+
+  const handleBackToList = () => {
+    setSelectedQuote(null);
+    setIsGenerated(false);
+    setIsGenerating(false);
+    setIsEditingClient(true);
+    setClientName("");
+    setDescription("");
+    setDate(new Date());
+    setTmpClientName("");
+    setTmpDescription("");
+    setTmpDate(new Date());
   };
 
   const generateHTML = () => {
@@ -214,7 +260,7 @@ const ExportScreen = () => {
     return (
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          <TouchableOpacity onPress={() => setSelectedQuote(null)} style={styles.backButton}>
+          <TouchableOpacity onPress={handleBackToList} style={styles.backButton}>
             <Text style={styles.backButtonText}>← Back to History</Text>
           </TouchableOpacity>
 
@@ -224,102 +270,106 @@ const ExportScreen = () => {
           <Text style={styles.helperText}>Toggle on/off to display on the invoice.</Text>
           <View style={styles.toggleGrid}>
             <ToggleItem label="Business Name" value={showBusinessName} onToggle={setShowBusinessName} />
-            
-            {businessEmail ? (
-              <ToggleItem label="Email" value={showBusinessEmail} onToggle={setShowBusinessEmail} />
-            ) : (
-              <AddLink label="Email" />
-            )}
-
-            {businessPhone ? (
-              <ToggleItem label="Phone" value={showBusinessPhone} onToggle={setShowBusinessPhone} />
-            ) : (
-              <AddLink label="Phone" />
-            )}
-
-            {businessDescription ? (
-              <ToggleItem label="Description" value={showBusinessDesc} onToggle={setShowBusinessDesc} />
-            ) : (
-              <AddLink label="Description" />
-            )}
+            {businessEmail ? <ToggleItem label="Email" value={showBusinessEmail} onToggle={setShowBusinessEmail} /> : <AddLink label="Email" />}
+            {businessPhone ? <ToggleItem label="Phone" value={showBusinessPhone} onToggle={setShowBusinessPhone} /> : <AddLink label="Phone" />}
+            {businessDescription ? <ToggleItem label="Description" value={showBusinessDesc} onToggle={setShowBusinessDesc} /> : <AddLink label="Description" />}
           </View>
 
           <Text style={styles.sectionTitle}>2. Client Details</Text>
           <Text style={styles.helperText}>These details will appear on the invoice.</Text>
+          
           <View style={styles.section}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Client Name (Optional)</Text>
-              <TextInput
-                style={styles.input}
-                value={clientName}
-                onChangeText={setClientName}
-              />
-            </View>
+            {isEditingClient ? (
+              /* EDIT MODE */
+              <>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Client Name (Optional)</Text>
+                  <TextInput style={styles.input} value={tmpClientName} onChangeText={setTmpClientName} />
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Project Description (Optional)</Text>
+                  <TextInput style={[styles.input, { height: 80 }]} value={tmpDescription} onChangeText={setTmpDescription} multiline />
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Invoice Date *</Text>
+                  <TouchableOpacity style={styles.dateDisplay} onPress={() => setShowPicker(true)}>
+                    <Text style={styles.dateDisplayText}>{tmpDate.toLocaleDateString()}</Text>
+                    <Text style={styles.dateChangeText}>Tap to change</Text>
+                  </TouchableOpacity>
+                  {showPicker && <DateTimePicker value={tmpDate} mode="date" display="default" onChange={onDateChange} />}
+                </View>
+                <TouchableOpacity style={styles.saveClientBtn} onPress={handleSaveClientDetails}>
+                  <Text style={styles.saveClientBtnText}>Save Client Details</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              /* LOCKED MODE */
+              <>
+                <View style={styles.displayBox}>
+                  <Text style={styles.displayLabel}>Client Name</Text>
+                  <Text style={styles.displayText}>{clientName || "Not provided"}</Text>
+                </View>
+                <View style={styles.displayBox}>
+                  <Text style={styles.displayLabel}>Description</Text>
+                  <Text style={styles.displayText}>{description || "Not provided"}</Text>
+                </View>
+                <View style={styles.displayBox}>
+                  <Text style={styles.displayLabel}>Date</Text>
+                  <Text style={styles.displayText}>{date.toLocaleDateString()}</Text>
+                </View>
+                <TouchableOpacity style={styles.editClientBtn} onPress={handleEditClientDetails}>
+                  <Text style={styles.editClientBtnText}>Edit Client Details</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Project Description (Optional)</Text>
-              <TextInput
-                style={[styles.input, { height: 80 }]}
-                value={description}
-                onChangeText={setDescription}
-                multiline
-              />
-            </View>
+          {!isEditingClient && (
+            <>
+              <Text style={styles.sectionTitle}>3. Invoice Type</Text>
+              <View style={styles.toggleRow}>
+                <TouchableOpacity onPress={() => setIsDetailed(true)} style={[styles.toggleBtn, isDetailed && styles.toggleBtnActive]}>
+                  <Text style={[styles.toggleBtnText, isDetailed && styles.toggleBtnTextActive]}>Detailed</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setIsDetailed(false)} style={[styles.toggleBtn, !isDetailed && styles.toggleBtnActive]}>
+                  <Text style={[styles.toggleBtnText, !isDetailed && styles.toggleBtnTextActive]}>Simple</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.helperText}>
+                {isDetailed 
+                  ? "Detailed: Shows itemized costs for material, power, wear, and margin." 
+                  : "Simple: Shows only the material name and the final total quote."}
+              </Text>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Invoice Date *</Text>
-              <TouchableOpacity 
-                style={styles.dateDisplay} 
-                onPress={() => setShowPicker(true)}
-              >
-                <Text style={styles.dateDisplayText}>{date.toLocaleDateString()}</Text>
-                <Text style={styles.dateChangeText}>Tap to change</Text>
+              <TouchableOpacity style={styles.previewBtn} onPress={() => setIsPreviewVisible(true)}>
+                <Text style={styles.previewBtnText}>Preview PDF</Text>
               </TouchableOpacity>
-              
-              {showPicker && (
-                <DateTimePicker
-                  value={date}
-                  mode="date"
-                  display="default"
-                  onChange={onDateChange}
-                />
+
+              {!isGenerated && !isGenerating && (
+                <TouchableOpacity style={styles.generateBtn} onPress={handleGenerateInvoice}>
+                  <Text style={styles.generateBtnText}>Generate Invoice</Text>
+                </TouchableOpacity>
               )}
-            </View>
-          </View>
 
-          <Text style={styles.sectionTitle}>3. Invoice Type</Text>
-          <View style={styles.toggleRow}>
-            <TouchableOpacity
-              onPress={() => setIsDetailed(true)}
-              style={[styles.toggleBtn, isDetailed && styles.toggleBtnActive]}
-            >
-              <Text style={[styles.toggleBtnText, isDetailed && styles.toggleBtnTextActive]}>Detailed</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setIsDetailed(false)}
-              style={[styles.toggleBtn, !isDetailed && styles.toggleBtnActive]}
-            >
-              <Text style={[styles.toggleBtnText, !isDetailed && styles.toggleBtnTextActive]}>Simple</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.helperText}>
-            {isDetailed 
-              ? "Detailed: Shows itemized costs for material, power, wear, and margin." 
-              : "Simple: Shows only the material name and the final total quote."}
-          </Text>
+              {isGenerating && (
+                <View style={styles.loaderContainer}>
+                  <ActivityIndicator size="large" color="#007AFF" />
+                  <Text style={styles.loaderText}>Rendering professional invoice...</Text>
+                </View>
+              )}
 
-          <TouchableOpacity style={styles.previewBtn} onPress={() => setIsPreviewVisible(true)}>
-            <Text style={styles.previewBtnText}>Preview PDF</Text>
-          </TouchableOpacity>
-
-          <View style={styles.actionRow}>
-            <TouchableOpacity style={[styles.exportBtn, { flex: 1, marginRight: 6 }]} onPress={handleShare}>
-              <Text style={styles.exportBtnText}>Share</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.exportBtn, { flex: 1, marginLeft: 6, backgroundColor: "#007AFF" }]} onPress={handleDownload}>
-              <Text style={styles.exportBtnText}>Download</Text>
-            </TouchableOpacity>
-          </View>
+              {isGenerated && (
+                <View style={styles.actionRow}>
+                  <TouchableOpacity style={[styles.exportBtn, { flex: 1, marginRight: 6 }]} onPress={handleShare}>
+                    <Text style={styles.exportBtnText}>Share PDF</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.exportBtn, { flex: 1, marginLeft: 6, backgroundColor: "#007AFF" }]} onPress={handleDownload}>
+                    <Text style={styles.exportBtnText}>Download PDF</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </>
+          )}
         </ScrollView>
 
         <Modal visible={isPreviewVisible} animationType="slide">
@@ -330,11 +380,7 @@ const ExportScreen = () => {
                 <Text style={styles.closeBtnText}>Close</Text>
               </TouchableOpacity>
             </View>
-            <WebView 
-              originWhitelist={['*']}
-              source={{ html: generateHTML() }} 
-              style={styles.webview} 
-            />
+            <WebView originWhitelist={['*']} source={{ html: generateHTML() }} style={styles.webview} />
           </SafeAreaView>
         </Modal>
       </SafeAreaView>
@@ -417,18 +463,34 @@ const styles = StyleSheet.create({
   toggleItemTextActive: { color: "#fff" },
   addButton: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1, borderStyle: 'dashed', borderColor: "#007AFF", marginRight: 8, marginBottom: 8, backgroundColor: "transparent" },
   addButtonText: { fontSize: 13, color: "#007AFF", fontWeight: "bold" },
+  
+  displayBox: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#f0f0f0" },
+  displayLabel: { fontSize: 12, color: "#999", marginBottom: 2 },
+  displayText: { fontSize: 16, color: "#333", fontWeight: "500" },
+  saveClientDetailsBtn: { backgroundColor: "#007AFF", padding: 15, borderRadius: 8, alignItems: "center", marginTop: 10 },
+  saveClientBtn: { backgroundColor: "#007AFF", padding: 15, borderRadius: 8, alignItems: "center", marginTop: 10 },
+  saveClientBtnText: { color: "#fff", fontWeight: "bold" },
+  editClientBtn: { marginTop: 15, padding: 10, alignItems: "center", borderWidth: 1, borderColor: "#007AFF", borderRadius: 8 },
+  editClientBtnText: { color: "#007AFF", fontWeight: "bold" },
+
   toggleRow: { flexDirection: "row", marginBottom: 8, borderRadius: 8, overflow: "hidden", borderWidth: 1, borderColor: "#007AFF" },
   toggleBtn: { flex: 1, padding: 12, alignItems: "center", backgroundColor: "#fff" },
   toggleBtnActive: { backgroundColor: "#007AFF" },
   toggleBtnText: { color: "#007AFF", fontWeight: "bold" },
   toggleBtnTextActive: { color: "#fff" },
+  
   previewBtn: { backgroundColor: "#6c757d", padding: 18, borderRadius: 8, alignItems: "center", marginBottom: 12, marginTop: 12 },
   previewBtnText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  generateBtn: { backgroundColor: "#007AFF", padding: 18, borderRadius: 8, alignItems: "center" },
+  generateBtnText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+  
+  loaderContainer: { alignItems: 'center', padding: 20 },
+  loaderText: { marginTop: 10, color: "#666", fontStyle: 'italic' },
+  
   actionRow: { flexDirection: "row", justifyContent: "space-between" },
   exportBtn: { backgroundColor: "#28a745", padding: 18, borderRadius: 8, alignItems: "center" },
   exportBtnText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
 
-  /* Modal Styles */
   modalContainer: { flex: 1, backgroundColor: "#fff" },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "#eee" },
   modalTitle: { fontSize: 18, fontWeight: "bold" },
