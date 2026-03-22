@@ -25,6 +25,12 @@ const VaultScreen = () => {
     removeMaterial,
   } = useStore();
 
+  // Local shadow state for numeric inputs to handle "0." and empty strings
+  const [rateStr, setRateStr] = useState(electricityRate.toString());
+  const [wattageStr, setWattageStr] = useState(printerWattage.toString());
+  const [marginStr, setMarginStr] = useState(profitMargin.toString());
+  const [feeStr, setFeeStr] = useState(wearAndTearFee.toString());
+
   // New Material Local State
   const [name, setName] = useState("");
   const [weight, setWeight] = useState("");
@@ -61,8 +67,11 @@ const VaultScreen = () => {
             <Text style={styles.label}>Electricity Rate ($/kWh)</Text>
             <TextInput
               style={styles.input}
-              value={electricityRate.toString()}
-              onChangeText={(val) => setElectricityRate(parseFloat(val) || 0)}
+              value={rateStr}
+              onChangeText={(val) => {
+                setRateStr(val);
+                setElectricityRate(parseFloat(val) || 0);
+              }}
               keyboardType="numeric"
             />
           </View>
@@ -71,8 +80,11 @@ const VaultScreen = () => {
             <Text style={styles.label}>Printer Wattage (W)</Text>
             <TextInput
               style={styles.input}
-              value={printerWattage.toString()}
-              onChangeText={(val) => setPrinterWattage(parseFloat(val) || 0)}
+              value={wattageStr}
+              onChangeText={(val) => {
+                setWattageStr(val);
+                setPrinterWattage(parseFloat(val) || 0);
+              }}
               keyboardType="numeric"
             />
           </View>
@@ -81,8 +93,11 @@ const VaultScreen = () => {
             <Text style={styles.label}>Profit Margin (%)</Text>
             <TextInput
               style={styles.input}
-              value={profitMargin.toString()}
-              onChangeText={(val) => setProfitMargin(parseFloat(val) || 0)}
+              value={marginStr}
+              onChangeText={(val) => {
+                setMarginStr(val);
+                setProfitMargin(parseFloat(val) || 0);
+              }}
               keyboardType="numeric"
             />
           </View>
@@ -91,8 +106,11 @@ const VaultScreen = () => {
             <Text style={styles.label}>Wear & Tear Fee ($/hr)</Text>
             <TextInput
               style={styles.input}
-              value={wearAndTearFee.toString()}
-              onChangeText={(val) => setWearAndTearFee(parseFloat(val) || 0)}
+              value={feeStr}
+              onChangeText={(val) => {
+                setFeeStr(val);
+                setWearAndTearFee(parseFloat(val) || 0);
+              }}
               keyboardType="numeric"
             />
           </View>
