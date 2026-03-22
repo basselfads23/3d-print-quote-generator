@@ -23,24 +23,22 @@ const RootNavigator = () => {
         },
         headerShadowVisible: false, // Flat design
         headerRight: () => (
-          <TouchableOpacity 
-            onPress={() => navigation.navigate('Settings')}
-            style={{ marginRight: 5 }}
-          >
+          <TouchableOpacity
+            onPress={() => navigation.navigate("Settings")}
+            style={{ marginRight: 5 }}>
             <Ionicons name="settings-outline" size={22} color={theme.primary} />
           </TouchableOpacity>
         ),
-      })}
-    >
-      <Stack.Screen 
-        name="MainTabs" 
-        component={TabNavigator} 
-        options={{ title: "3D QUOTE PRO" }} 
+      })}>
+      <Stack.Screen
+        name="MainTabs"
+        component={TabNavigator}
+        options={{ title: "3D QUOTE PRO" }}
       />
-      <Stack.Screen 
-        name="Settings" 
-        component={SettingsScreen} 
-        options={{ title: "App Settings", headerRight: () => null }} 
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ title: "App Settings", headerRight: () => null }}
       />
     </Stack.Navigator>
   );

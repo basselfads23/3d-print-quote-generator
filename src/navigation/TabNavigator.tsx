@@ -16,8 +16,10 @@ const TabNavigator = () => {
   const theme = useTheme();
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.surface }} edges={['top']}>
-      <Tab.Navigator 
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: theme.surface }}
+      edges={["top"]}>
+      <Tab.Navigator
         tabBarPosition="bottom"
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color }) => {
@@ -35,31 +37,39 @@ const TabNavigator = () => {
           },
           tabBarActiveTintColor: theme.primary,
           tabBarInactiveTintColor: theme.textSecondary,
-          tabBarIndicatorStyle: { backgroundColor: theme.primary, top: 0, height: 3 },
-          tabBarLabelStyle: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
-          tabBarStyle: { 
-            backgroundColor: theme.surface, 
-            borderTopWidth: 1, 
+          tabBarIndicatorStyle: {
+            backgroundColor: theme.primary,
+            top: 0,
+            height: 3,
+          },
+          tabBarLabelStyle: {
+            fontSize: 10,
+            fontWeight: "800",
+            textTransform: "uppercase",
+            letterSpacing: 0.5,
+          },
+          tabBarStyle: {
+            backgroundColor: theme.surface,
+            borderTopWidth: 1,
             borderTopColor: theme.border,
             elevation: 0,
-            shadowOpacity: 0
+            shadowOpacity: 0,
           },
           tabBarShowIcon: true,
-        })}
-      >
-        <Tab.Screen 
-          name="Calculator" 
-          component={CalculatorScreen} 
+        })}>
+        <Tab.Screen
+          name="Calculator"
+          component={CalculatorScreen}
           options={{ title: "Calculator" }}
         />
-        <Tab.Screen 
-          name="Materials" 
-          component={MaterialsScreen} 
+        <Tab.Screen
+          name="Materials"
+          component={MaterialsScreen}
           options={{ title: "Materials" }}
         />
-        <Tab.Screen 
-          name="Export" 
-          component={ExportScreen} 
+        <Tab.Screen
+          name="Export"
+          component={ExportScreen}
           options={{ title: "Export" }}
         />
       </Tab.Navigator>
