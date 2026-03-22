@@ -8,10 +8,13 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
 import { useStore, MaterialProfile } from "../store/useStore";
 
 const MaterialsScreen = () => {
+  const navigation = useNavigation<any>();
   const {
+    isSetupComplete,
     materials,
     weightUnit,
     currencySymbol,
@@ -31,6 +34,25 @@ const MaterialsScreen = () => {
 
   // Per-Material Delete Confirmation State
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  if (!isSetupComplete) {
+    return (
+      <SafeAreaView style={styles.lockoutArea}>
+        <View style={styles.lockoutContainer}>
+          <Text style={styles.lockoutTitle}>Setup Required</Text>
+          <Text style={styles.lockoutMessage}>
+            Please configure your global settings before adding materials.
+          </Text>
+          <TouchableOpacity 
+            style={styles.setupNavigateBtn} 
+            onPress={() => navigation.navigate('Settings')}
+          >
+            <Text style={styles.btnText}>Go to Settings</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const handleAddMaterial = () => {
     if (name && price) {
@@ -184,6 +206,14 @@ const styles = StyleSheet.create({
   cancelDeleteButton: { backgroundColor: "#E5E5EA", paddingVertical: 8, paddingHorizontal: 16, borderRadius: 4 },
   cancelDeleteButtonText: { color: "#333", fontWeight: "bold" },
   emptyText: { textAlign: "center", color: "#999", paddingVertical: 10 },
+  
+  /* Lockout Styles */
+  lockoutArea: { flex: 1, backgroundColor: "#fff", justifyContent: 'center', alignItems: 'center' },
+  lockoutContainer: { padding: 30, alignItems: 'center' },
+  lockoutTitle: { fontSize: 22, fontWeight: 'bold', color: '#333', marginBottom: 10 },
+  lockoutMessage: { fontSize: 16, color: '#666', textAlign: 'center', marginBottom: 25 },
+  setupNavigateBtn: { backgroundColor: '#007AFF', paddingVertical: 12, paddingHorizontal: 25, borderRadius: 8 },
+  btnText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
 });
 
 export default MaterialsScreen;

@@ -9,10 +9,13 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
 import { useStore } from "../store/useStore";
 
 const CalculatorScreen = () => {
+  const navigation = useNavigation<any>();
   const {
+    isSetupComplete,
     materials,
     electricityRate,
     printerWattage,
@@ -34,6 +37,25 @@ const CalculatorScreen = () => {
   const [isAddingMaterial, setIsAddingMaterial] = useState(false);
   const [newName, setNewName] = useState("");
   const [newPrice, setNewPrice] = useState("");
+
+  if (!isSetupComplete) {
+    return (
+      <SafeAreaView style={styles.lockoutArea}>
+        <View style={styles.lockoutContainer}>
+          <Text style={styles.lockoutTitle}>Setup Required</Text>
+          <Text style={styles.lockoutMessage}>
+            Please configure your global settings before calculating quotes.
+          </Text>
+          <TouchableOpacity 
+            style={styles.setupNavigateBtn} 
+            onPress={() => navigation.navigate('Settings')}
+          >
+            <Text style={styles.btnText}>Go to Settings</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const selectedMaterial = materials.find((m) => m.id === selectedMaterialId);
 
@@ -141,7 +163,7 @@ const CalculatorScreen = () => {
               <Text style={styles.unitLabel}>per {weightUnit}</Text>
             </View>
             <TouchableOpacity style={styles.buttonSmall} onPress={handleQuickAdd}>
-              <Text style={styles.buttonText}>Quick Add & Select</Text>
+              <Text style={styles.btnText}>Quick Add & Select</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -216,13 +238,20 @@ const styles = StyleSheet.create({
   label: { fontSize: 14, color: "#444", marginBottom: 6 },
   input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 4, padding: 12, fontSize: 16, backgroundColor: "#fff" },
   unitLabel: { fontSize: 16, color: "#666" },
-  row: { flexDirection: "row", marginBottom: 8 },
+  row: { flexDirection: "row" },
   buttonSmall: { backgroundColor: "#28a745", padding: 12, borderRadius: 6, alignItems: "center" },
-  buttonText: { color: "#fff", fontWeight: "bold" },
+  btnText: { color: "#fff", fontWeight: "bold" },
   calculateButton: { backgroundColor: "#007AFF", padding: 18, borderRadius: 8, alignItems: "center", marginTop: 20 },
   calculateButtonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
   successMessage: { marginTop: 20, padding: 15, backgroundColor: "#d4edda", borderRadius: 8, alignItems: "center", borderWidth: 1, borderColor: "#c3e6cb" },
   successText: { color: "#155724", fontWeight: "bold", fontSize: 16 },
+  
+  /* Lockout Styles */
+  lockoutArea: { flex: 1, backgroundColor: "#fff", justifyContent: 'center', alignItems: 'center' },
+  lockoutContainer: { padding: 30, alignItems: 'center' },
+  lockoutTitle: { fontSize: 22, fontWeight: 'bold', color: '#333', marginBottom: 10 },
+  lockoutMessage: { fontSize: 16, color: '#666', textAlign: 'center', marginBottom: 25 },
+  setupNavigateBtn: { backgroundColor: '#007AFF', paddingVertical: 12, paddingHorizontal: 25, borderRadius: 8 },
 });
 
 export default CalculatorScreen;

@@ -26,6 +26,9 @@ export interface QuoteRecord {
 }
 
 interface StoreState {
+  // Setup Guard
+  isSetupComplete: boolean;
+  
   // User Profile
   businessName: string;
   contactInfo: string;
@@ -33,7 +36,7 @@ interface StoreState {
   
   // App Preferences
   currencySymbol: string;
-  weightUnit: string; // "g", "kg", "lb"
+  weightUnit: string; // "g", "oz"
   pdfFont: string; // "Helvetica" | "Times New Roman"
   
   // Print Variables
@@ -48,6 +51,7 @@ interface StoreState {
   recentQuotes: QuoteRecord[];
 
   // Actions
+  completeSetup: () => void;
   setBusinessName: (name: string) => void;
   setContactInfo: (info: string) => void;
   setBusinessDescription: (desc: string) => void;
@@ -72,6 +76,7 @@ interface StoreState {
 const EXPIRE_TIME = 12 * 60 * 60 * 1000; // 12 hours
 
 const initialState = {
+  isSetupComplete: false,
   businessName: "",
   contactInfo: "",
   businessDescription: "",
@@ -92,6 +97,7 @@ export const useStore = create<StoreState>()(
     (set) => ({
       ...initialState,
 
+      completeSetup: () => set({ isSetupComplete: true }),
       setBusinessName: (name) => set({ businessName: name }),
       setContactInfo: (info) => set({ contactInfo: info }),
       setBusinessDescription: (desc) => set({ businessDescription: desc }),
