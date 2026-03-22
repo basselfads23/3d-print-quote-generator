@@ -25,6 +25,23 @@ export interface QuoteRecord {
   currencySymbol: string;
 }
 
+const DEFAULT_VALUES = {
+  isSetupComplete: false,
+  businessName: "",
+  contactInfo: "",
+  businessDescription: "",
+  currencySymbol: "$",
+  weightUnit: "g",
+  pdfFont: "Helvetica",
+  electricityRate: 0,
+  printerWattage: 0,
+  profitMargin: 0,
+  wearAndTearFee: 0,
+  taxRate: 0,
+  materials: [],
+  recentQuotes: [],
+};
+
 interface StoreState {
   // Setup Guard
   isSetupComplete: boolean;
@@ -75,27 +92,10 @@ interface StoreState {
 
 const EXPIRE_TIME = 12 * 60 * 60 * 1000; // 12 hours
 
-const initialState = {
-  isSetupComplete: false,
-  businessName: "",
-  contactInfo: "",
-  businessDescription: "",
-  currencySymbol: "$",
-  weightUnit: "g",
-  pdfFont: "Helvetica",
-  electricityRate: 0,
-  printerWattage: 0,
-  profitMargin: 0,
-  wearAndTearFee: 0,
-  taxRate: 0,
-  materials: [],
-  recentQuotes: [],
-};
-
 export const useStore = create<StoreState>()(
   persist(
     (set) => ({
-      ...initialState,
+      ...DEFAULT_VALUES,
 
       completeSetup: () => set({ isSetupComplete: true }),
       setBusinessName: (name) => set({ businessName: name }),
@@ -159,7 +159,7 @@ export const useStore = create<StoreState>()(
         
       clearAllQuotes: () => set({ recentQuotes: [] }),
       
-      factoryReset: () => set(initialState),
+      factoryReset: () => set(DEFAULT_VALUES),
     }),
     {
       name: "3d-quote-storage",
