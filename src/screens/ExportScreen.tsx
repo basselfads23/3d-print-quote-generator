@@ -8,10 +8,11 @@ import {
   ScrollView,
   SafeAreaView,
   FlatList,
-  Alert,
+  Platform,
 } from "react-native";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useStore, QuoteRecord } from "../store/useStore";
 
 const ExportScreen = () => {
@@ -26,17 +27,28 @@ const ExportScreen = () => {
   const [selectedQuote, setSelectedQuote] = useState<QuoteRecord | null>(null);
   const [clientName, setClientName] = useState("");
   const [description, setDescription] = useState("");
-  const [invoiceDate, setInvoiceDate] = useState(new Date().toLocaleDateString());
+  
+  // Date Picker State
+  const [date, setDate] = useState(new Date());
+  const [showPicker, setShowPicker] = useState(false);
+  
   const [isDetailed, setIsDetailed] = useState(true);
 
   useEffect(() => {
     clearOldQuotes();
   }, []);
 
+  const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    const currentDate = selectedDate || date;
+    setShowPicker(Platform.OS === 'ios');
+    setDate(currentDate);
+  };
+
   const generateHTML = () => {
     if (!selectedQuote) return "";
 
     const marginAmount = selectedQuote.baseCost * (profitMargin / 100);
+    const dateStr = date.toLocaleDateString();
 
     const breakdownRows = `
       <tr><td>Material Cost (${selectedQuote.materialName})</td><td class="amount">$${selectedQuote.materialCost.toFixed(2)}</td></tr>
@@ -77,7 +89,7 @@ const ExportScreen = () => {
             <div class="business-name">${businessName || "Invoice"}</div>
             <div class="invoice-info">
               <div class="invoice-title">QUOTE</div>
-              <div>Date: ${invoiceDate}</div>
+              <div>Date: ${dateStr}</div>
             </div>
           </div>
 
@@ -130,7 +142,7 @@ const ExportScreen = () => {
     /* View B: Invoice Setup Form */
     return (
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.container}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
           <TouchableOpacity onPress={() => setSelectedQuote(null)} style={styles.backButton}>
             <Text style={styles.backButtonText}>← Back to History</Text>
           </TouchableOpacity>
@@ -172,11 +184,22 @@ const ExportScreen = () => {
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Invoice Date *</Text>
-              <TextInput
-                style={styles.input}
-                value={invoiceDate}
-                onChangeText={setInvoiceDate}
-              />
+              <TouchableOpacity 
+                style={styles.dateDisplay} 
+                onPress={() => setShowPicker(true)}
+              >
+                <Text style={styles.dateDisplayText}>{date.toLocaleDateString()}</Text>
+                <Text style={styles.dateChangeText}>Tap to change</Text>
+              </TouchableOpacity>
+              
+              {showPicker && (
+                <DateTimePicker
+                  value={date}
+                  mode="date"
+                  display="default"
+                  onChange={onDateChange}
+                />
+              )}
             </View>
           </View>
 
@@ -211,7 +234,7 @@ const ExportScreen = () => {
   /* View A: Recent Quotes List */
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+      <View style={styles.listContainer}>
         <Text style={styles.header}>Recent Calculations</Text>
         <Text style={styles.subHeader}>12-Hour History</Text>
 
@@ -250,7 +273,8 @@ const ExportScreen = () => {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#f5f5f5" },
-  container: { flex: 1, padding: 16 },
+  scrollContent: { padding: 16, paddingBottom: 40 },
+  listContainer: { flex: 1, padding: 16 },
   header: { fontSize: 24, fontWeight: "bold", color: "#333", marginBottom: 4 },
   subHeader: { fontSize: 14, color: "#666", marginBottom: 20 },
   emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
@@ -272,6 +296,9 @@ const styles = StyleSheet.create({
   inputGroup: { marginBottom: 16 },
   label: { fontSize: 14, color: "#444", marginBottom: 6 },
   input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 4, padding: 12, fontSize: 16, backgroundColor: "#fff" },
+  dateDisplay: { borderWidth: 1, borderColor: "#ccc", borderRadius: 4, padding: 12, backgroundColor: "#fff", flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  dateDisplayText: { fontSize: 16, color: "#333" },
+  dateChangeText: { fontSize: 12, color: "#007AFF", fontWeight: "bold" },
   subtext: { fontSize: 12, color: "#999", marginTop: 4 },
   toggleRow: { flexDirection: "row", marginBottom: 24, borderRadius: 8, overflow: "hidden", borderWidth: 1, borderColor: "#007AFF" },
   toggleBtn: { flex: 1, padding: 12, alignItems: "center", backgroundColor: "#fff" },
