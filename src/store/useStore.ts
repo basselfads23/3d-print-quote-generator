@@ -5,8 +5,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 export interface MaterialProfile {
   id: string;
   name: string;
-  weightInGrams: number;
   price: number;
+  unit: string; // "g", "kg", "lb"
 }
 
 interface StoreState {

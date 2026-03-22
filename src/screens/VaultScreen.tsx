@@ -25,33 +25,59 @@ const VaultScreen = () => {
     removeMaterial,
   } = useStore();
 
-  // Local shadow state for numeric inputs to handle "0." and empty strings
-  const [rateStr, setRateStr] = useState(electricityRate.toString());
-  const [wattageStr, setWattageStr] = useState(printerWattage.toString());
-  const [marginStr, setMarginStr] = useState(profitMargin.toString());
-  const [feeStr, setFeeStr] = useState(wearAndTearFee.toString());
+  // Edit Mode State for Global Settings
+  const [isEditingSettings, setIsEditingSettings] = useState(false);
+  const [tempRate, setTempRate] = useState(electricityRate.toString());
+  const [tempWattage, setTempWattage] = useState(printerWattage.toString());
+  const [tempMargin, setTempMargin] = useState(profitMargin.toString());
+  const [tempFee, setTempFee] = useState(wearAndTearFee.toString());
 
   // New Material Local State
   const [name, setName] = useState("");
-  const [weight, setWeight] = useState("");
   const [price, setPrice] = useState("");
+  const [unit, setUnit] = useState("kg"); // Default unit
+
+  const handleEditToggle = () => {
+    if (isEditingSettings) {
+      // Revert if cancel
+      setTempRate(electricityRate.toString());
+      setTempWattage(printerWattage.toString());
+      setTempMargin(profitMargin.toString());
+      setTempFee(wearAndTearFee.toString());
+    } else {
+      // Initialize temp state with current store values
+      setTempRate(electricityRate.toString());
+      setTempWattage(printerWattage.toString());
+      setTempMargin(profitMargin.toString());
+      setTempFee(wearAndTearFee.toString());
+    }
+    setIsEditingSettings(!isEditingSettings);
+  };
+
+  const handleSaveSettings = () => {
+    setElectricityRate(parseFloat(tempRate) || 0);
+    setPrinterWattage(parseFloat(tempWattage) || 0);
+    setProfitMargin(parseFloat(tempMargin) || 0);
+    setWearAndTearFee(parseFloat(tempFee) || 0);
+    setIsEditingSettings(false);
+  };
 
   const handleAddMaterial = () => {
-    if (name && weight && price) {
+    if (name && price) {
       addMaterial({
         name,
-        weightInGrams: parseFloat(weight),
         price: parseFloat(price),
+        unit,
       });
       setName("");
-      setWeight("");
       setPrice("");
     }
   };
 
-  const renderSectionHeader = (title: string) => (
-    <View style={styles.sectionHeader}>
+  const renderSectionHeader = (title: string, action?: React.ReactNode) => (
+    <View style={styles.sectionHeaderRow}>
       <Text style={styles.sectionTitle}>{title}</Text>
+      {action}
     </View>
   );
 
@@ -61,59 +87,43 @@ const VaultScreen = () => {
         <Text style={styles.header}>Material Profiles & Settings</Text>
 
         {/* Section 1: Global Settings */}
-        {renderSectionHeader("Global Settings")}
+        {renderSectionHeader(
+          "Global Settings",
+          <TouchableOpacity onPress={handleEditToggle} style={styles.editButton}>
+            <Text style={styles.editButtonText}>
+              {isEditingSettings ? "Cancel" : "Edit"}
+            </Text>
+          </TouchableOpacity>
+        )}
         <View style={styles.section}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Electricity Rate ($/kWh)</Text>
-            <TextInput
-              style={styles.input}
-              value={rateStr}
-              onChangeText={(val) => {
-                setRateStr(val);
-                setElectricityRate(parseFloat(val) || 0);
-              }}
-              keyboardType="numeric"
-            />
-          </View>
+          {[
+            { label: "Electricity Rate ($/kWh)", val: isEditingSettings ? tempRate : electricityRate, set: setTempRate },
+            { label: "Printer Wattage (W)", val: isEditingSettings ? tempWattage : printerWattage, set: setTempWattage },
+            { label: "Profit Margin (%)", val: isEditingSettings ? tempMargin : profitMargin, set: setTempMargin },
+            { label: "Wear & Tear Fee ($/hr)", val: isEditingSettings ? tempFee : wearAndTearFee, set: setTempFee },
+          ].map((item, idx) => (
+            <View key={idx} style={styles.inputGroup}>
+              <Text style={styles.label}>{item.label}</Text>
+              {isEditingSettings ? (
+                <TextInput
+                  style={styles.input}
+                  value={item.val.toString()}
+                  onChangeText={item.set}
+                  keyboardType="numeric"
+                />
+              ) : (
+                <View style={styles.readOnlyBox}>
+                  <Text style={styles.readOnlyText}>{item.val}</Text>
+                </View>
+              )}
+            </View>
+          ))}
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Printer Wattage (W)</Text>
-            <TextInput
-              style={styles.input}
-              value={wattageStr}
-              onChangeText={(val) => {
-                setWattageStr(val);
-                setPrinterWattage(parseFloat(val) || 0);
-              }}
-              keyboardType="numeric"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Profit Margin (%)</Text>
-            <TextInput
-              style={styles.input}
-              value={marginStr}
-              onChangeText={(val) => {
-                setMarginStr(val);
-                setProfitMargin(parseFloat(val) || 0);
-              }}
-              keyboardType="numeric"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Wear & Tear Fee ($/hr)</Text>
-            <TextInput
-              style={styles.input}
-              value={feeStr}
-              onChangeText={(val) => {
-                setFeeStr(val);
-                setWearAndTearFee(parseFloat(val) || 0);
-              }}
-              keyboardType="numeric"
-            />
-          </View>
+          {isEditingSettings && (
+            <TouchableOpacity style={styles.saveButton} onPress={handleSaveSettings}>
+              <Text style={styles.buttonText}>Save Settings</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Section 2: Add Material */}
@@ -125,20 +135,28 @@ const VaultScreen = () => {
             value={name}
             onChangeText={setName}
           />
-          <TextInput
-            style={styles.input}
-            placeholder="Spool Weight (g)"
-            value={weight}
-            onChangeText={setWeight}
-            keyboardType="numeric"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Price ($)"
-            value={price}
-            onChangeText={setPrice}
-            keyboardType="numeric"
-          />
+          <View style={styles.row}>
+            <TextInput
+              style={[styles.input, { flex: 2, marginRight: 8 }]}
+              placeholder="Price ($)"
+              value={price}
+              onChangeText={setPrice}
+              keyboardType="numeric"
+            />
+            <View style={styles.unitSelector}>
+              {["g", "kg", "lb"].map((u) => (
+                <TouchableOpacity
+                  key={u}
+                  onPress={() => setUnit(u)}
+                  style={[styles.unitButton, unit === u && styles.unitButtonActive]}
+                >
+                  <Text style={[styles.unitButtonText, unit === u && styles.unitButtonTextActive]}>
+                    {u}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
           <TouchableOpacity style={styles.button} onPress={handleAddMaterial}>
             <Text style={styles.buttonText}>Save Material</Text>
           </TouchableOpacity>
@@ -155,7 +173,7 @@ const VaultScreen = () => {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.materialName}>{item.name}</Text>
                   <Text style={styles.materialDetails}>
-                    {item.weightInGrams}g - ${item.price}
+                    ${item.price} per {item.unit}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -177,8 +195,16 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#f5f5f5" },
   container: { padding: 16 },
   header: { fontSize: 24, fontWeight: "bold", marginBottom: 24, color: "#333" },
-  sectionHeader: { marginBottom: 12, marginTop: 12 },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+    marginTop: 12,
+  },
   sectionTitle: { fontSize: 18, fontWeight: "600", color: "#666" },
+  editButton: { padding: 4 },
+  editButtonText: { color: "#007AFF", fontWeight: "bold" },
   section: {
     backgroundColor: "#fff",
     padding: 16,
@@ -195,7 +221,39 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     padding: 10,
     fontSize: 16,
-    marginBottom: 8,
+  },
+  readOnlyBox: {
+    padding: 10,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "#eee",
+  },
+  readOnlyText: { fontSize: 16, color: "#333" },
+  row: { flexDirection: "row", marginBottom: 8 },
+  unitSelector: {
+    flexDirection: "row",
+    flex: 1.5,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 4,
+    overflow: "hidden",
+  },
+  unitButton: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  unitButtonActive: { backgroundColor: "#007AFF" },
+  unitButtonText: { fontSize: 14, color: "#666" },
+  unitButtonTextActive: { color: "#fff", fontWeight: "bold" },
+  saveButton: {
+    backgroundColor: "#28a745",
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 8,
   },
   button: {
     backgroundColor: "#007AFF",
