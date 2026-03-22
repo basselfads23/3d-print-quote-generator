@@ -74,6 +74,27 @@ const ExportScreen = () => {
   // Find the actual quote object from history
   const activeQuote = recentQuotes.find((q) => q.id === selectedQuoteId) || null;
 
+  // STRICT FOCUS MODE: Hide gear icon from parent stack header when in setup
+  useLayoutEffect(() => {
+    const parent = navigation.getParent();
+    if (selectedQuoteId) {
+      parent?.setOptions({
+        headerRight: () => null,
+      });
+    } else {
+      parent?.setOptions({
+        headerRight: () => (
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('Settings')}
+            style={{ marginRight: 15 }}
+          >
+            <Ionicons name="settings-outline" size={22} color={theme.primary} />
+          </TouchableOpacity>
+        ),
+      });
+    }
+  }, [navigation, selectedQuoteId, theme]);
+
   useEffect(() => {
     if (isFocused) {
       clearOldQuotes();
