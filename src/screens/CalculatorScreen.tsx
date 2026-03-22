@@ -11,8 +11,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { useStore } from "../store/useStore";
+import { useTheme } from "../theme";
 
 const CalculatorScreen = () => {
+  const theme = useTheme();
   const navigation = useNavigation<any>();
   const {
     isSetupComplete,
@@ -34,24 +36,26 @@ const CalculatorScreen = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [lastFinalQuote, setLastFinalQuote] = useState<number | null>(null);
 
-  // "Add Quick Material" State
+  const purchaseUnit = "kg";
+
+  // Quick Add State
   const [isAddingMaterial, setIsAddingMaterial] = useState(false);
   const [newName, setNewName] = useState("");
   const [newPrice, setNewPrice] = useState("");
 
   if (!isSetupComplete) {
     return (
-      <SafeAreaView style={styles.lockoutArea}>
+      <SafeAreaView style={[styles.lockoutArea, { backgroundColor: theme.background }]}>
         <View style={styles.lockoutContainer}>
-          <Text style={styles.lockoutTitle}>Setup Required</Text>
-          <Text style={styles.lockoutMessage}>
+          <Text style={[styles.lockoutTitle, { color: theme.text }]}>Setup Required</Text>
+          <Text style={[styles.lockoutMessage, { color: theme.textSecondary }]}>
             Please configure your global settings before calculating quotes.
           </Text>
           <TouchableOpacity 
-            style={styles.setupNavigateBtn} 
+            style={[styles.setupNavigateBtn, { backgroundColor: theme.primary }]} 
             onPress={() => navigation.navigate('Settings')}
           >
-            <Text style={styles.btnText}>Go to Settings</Text>
+            <Text style={[styles.btnText, { color: theme.background }]}>Go to Settings</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -73,13 +77,12 @@ const CalculatorScreen = () => {
     const hours = parseFloat(printHours);
     const weight = parseFloat(modelWeight);
 
-    // Material Cost
-    const materialCost = selectedMaterial.price * weight;
+    const pricePerBaseUnit = weightUnit === "g" 
+      ? (selectedMaterial.price / 1000) 
+      : (selectedMaterial.price / 35.274);
 
-    // Electricity Cost = (kW) * ($/kWh) * (h)
+    const materialCost = pricePerBaseUnit * weight;
     const electricityCost = (printerWattage / 1000) * electricityRate * hours;
-
-    // Wear & Tear = ($/hr) * (hr)
     const wearAndTearCost = wearAndTearFee * hours;
 
     const baseCost = materialCost + electricityCost + wearAndTearCost;
@@ -104,89 +107,91 @@ const CalculatorScreen = () => {
     setShowSuccess(true);
     setPrintHours("");
     setModelWeight("");
-    setTimeout(() => setShowSuccess(false), 5000); // Keep result longer
+    setTimeout(() => setShowSuccess(false), 8000);
   };
 
   const handleQuickAdd = () => {
     if (newName && newPrice) {
       const id = Date.now().toString();
-      addMaterial({
-        name: newName,
-        price: parseFloat(newPrice),
-      });
-      setSelectedMaterialId(id); // Select it immediately
+      addMaterial({ name: newName, price: parseFloat(newPrice) });
+      setSelectedMaterialId(id);
       setIsAddingMaterial(false);
       setNewName("");
       setNewPrice("");
     }
   };
 
-  const handleCancelQuickAdd = () => {
-    setNewName("");
-    setNewPrice("");
-    setIsAddingMaterial(false);
-  };
-
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={[]}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.header}>The Daily Calculator</Text>
+        <Text style={[styles.header, { color: theme.text }]}>THE CALCULATOR</Text>
 
-        {/* Section 1: Material Selection */}
-        <Text style={styles.sectionTitle}>1. Select Material</Text>
+        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>1. SELECT MATERIAL</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
           {materials.map((m) => (
             <TouchableOpacity
               key={m.id}
-              style={[styles.materialCard, selectedMaterialId === m.id && styles.materialCardActive]}
+              style={[
+                styles.materialCard, 
+                { backgroundColor: theme.surface, borderColor: theme.border },
+                selectedMaterialId === m.id && { borderColor: theme.primary, borderWidth: 2 }
+              ]}
               onPress={() => setSelectedMaterialId(m.id)}
             >
-              <Text style={[styles.materialCardText, selectedMaterialId === m.id && styles.materialCardTextActive]}>
-                {m.name}
-              </Text>
-              <Text style={[styles.materialCardSub, selectedMaterialId === m.id && styles.materialCardTextActive]}>
-                {currencySymbol}{m.price}/{weightUnit}
-              </Text>
+              <Text style={[styles.materialCardText, { color: theme.text }]}>{m.name}</Text>
+              <Text style={[styles.materialCardSub, { color: theme.textSecondary }]}>{currencySymbol}{m.price} / kg</Text>
             </TouchableOpacity>
           ))}
           <TouchableOpacity
-            style={[styles.materialCard, styles.addMaterialCard]}
+            style={[styles.materialCard, styles.addMaterialCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
             onPress={() => setIsAddingMaterial(!isAddingMaterial)}
           >
-            <Text style={styles.addMaterialCardText}>{isAddingMaterial ? "Cancel" : "+ Add New"}</Text>
+            <Text style={[styles.addMaterialCardText, { color: theme.primary }]}>{isAddingMaterial ? "CANCEL" : "+ ADD NEW"}</Text>
           </TouchableOpacity>
         </ScrollView>
 
         {isAddingMaterial && (
-          <View style={styles.quickAddForm}>
-            <TextInput style={styles.input} value={newName} onChangeText={setNewName} />
-            <View style={[styles.row, { marginTop: 8, alignItems: 'center' }]}>
+          <View style={[styles.quickAddForm, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: theme.text }]}>Material Name *</Text>
               <TextInput 
-                style={[styles.input, { flex: 1, marginRight: 8 }]} 
+                style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]} 
+                value={newName} 
+                onChangeText={setNewName} 
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: theme.text }]}>Price per kg ({currencySymbol}) *</Text>
+              <TextInput 
+                style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]} 
                 value={newPrice} 
                 onChangeText={setNewPrice} 
                 keyboardType="numeric" 
               />
-              <Text style={styles.unitLabel}>per {weightUnit}</Text>
             </View>
             <View style={styles.row}>
-              <TouchableOpacity style={[styles.buttonSmall, { flex: 1, marginRight: 4 }]} onPress={handleQuickAdd}>
-                <Text style={styles.btnText}>Quick Add & Select</Text>
+              <TouchableOpacity 
+                style={[styles.buttonSmall, { flex: 1, marginRight: 4, backgroundColor: theme.primary }]} 
+                onPress={handleQuickAdd}
+              >
+                <Text style={[styles.btnText, { color: theme.background }]}>SAVE & SELECT</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.cancelSmallBtn, { flex: 1, marginLeft: 4 }]} onPress={handleCancelQuickAdd}>
-                <Text style={styles.cancelBtnText}>Cancel</Text>
+              <TouchableOpacity 
+                style={[styles.cancelSmallBtn, { flex: 1, marginLeft: 4, backgroundColor: theme.border }]} 
+                onPress={() => setIsAddingMaterial(false)}
+              >
+                <Text style={[styles.cancelBtnText, { color: theme.text }]}>CANCEL</Text>
               </TouchableOpacity>
             </View>
           </View>
         )}
 
-        {/* Section 2: Inputs */}
         <View style={styles.inputSection}>
-          <Text style={styles.sectionTitle}>2. Print Details</Text>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>2. PRINT DETAILS</Text>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Print Time (Hours)</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Print Time (Hours) *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
               value={printHours}
               onChangeText={setPrintHours}
               keyboardType="numeric"
@@ -194,9 +199,9 @@ const CalculatorScreen = () => {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Model Weight ({weightUnit})</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Model Weight ({weightUnit}) *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
               value={modelWeight}
               onChangeText={setModelWeight}
               keyboardType="numeric"
@@ -204,16 +209,17 @@ const CalculatorScreen = () => {
           </View>
         </View>
 
-        {/* Section 3: Calculate Button */}
-        <TouchableOpacity style={styles.calculateButton} onPress={handleCalculate}>
-          <Text style={styles.calculateButtonText}>Calculate Final Quote</Text>
+        <TouchableOpacity 
+          style={[styles.calculateButton, { backgroundColor: theme.primary }]} 
+          onPress={handleCalculate}
+        >
+          <Text style={[styles.calculateButtonText, { color: theme.background }]}>CALCULATE QUOTE</Text>
         </TouchableOpacity>
 
-        {/* Section 4: Success Message & Result */}
         {showSuccess && lastFinalQuote !== null && (
           <View style={styles.successMessage}>
-            <Text style={styles.resultValue}>{currencySymbol}{lastFinalQuote.toFixed(2)}</Text>
-            <Text style={styles.successText}>Quote Saved to Export Tab!</Text>
+            <Text style={[styles.massiveResult, { color: theme.primary }]}>{currencySymbol}{lastFinalQuote.toFixed(2)}</Text>
+            <Text style={[styles.successText, { color: theme.success }]}>Quote saved to Export tab</Text>
           </View>
         )}
       </ScrollView>
@@ -222,50 +228,43 @@ const CalculatorScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#f5f5f5" },
-  container: { padding: 16 },
-  header: { fontSize: 24, fontWeight: "bold", marginBottom: 20, color: "#333" },
-  sectionTitle: { fontSize: 18, fontWeight: "600", color: "#666", marginBottom: 12 },
-  horizontalScroll: { flexDirection: "row", marginBottom: 16 },
+  safeArea: { flex: 1 },
+  container: { padding: 16, paddingBottom: 40 },
+  header: { fontSize: 28, fontWeight: "800", marginBottom: 24, letterSpacing: -0.5 },
+  sectionTitle: { fontSize: 12, fontWeight: "800", marginBottom: 12, letterSpacing: 1 },
+  horizontalScroll: { flexDirection: "row", marginBottom: 20 },
   materialCard: {
-    backgroundColor: "#fff",
-    padding: 12,
-    borderRadius: 8,
+    padding: 16,
+    borderRadius: 4,
     borderWidth: 1,
-    borderColor: "#e0e0e0",
-    marginRight: 10,
-    minWidth: 100,
+    marginRight: 12,
+    minWidth: 120,
     alignItems: "center",
   },
-  materialCardActive: { backgroundColor: "#007AFF", borderColor: "#007AFF" },
-  materialCardText: { fontSize: 14, fontWeight: "bold", color: "#333" },
-  materialCardSub: { fontSize: 12, color: "#666" },
-  materialCardTextActive: { color: "#fff" },
+  materialCardText: { fontSize: 14, fontWeight: "700" },
+  materialCardSub: { fontSize: 12, marginTop: 4 },
   addMaterialCard: { borderStyle: "dashed", justifyContent: "center" },
-  addMaterialCardText: { color: "#007AFF", fontWeight: "bold" },
-  quickAddForm: { backgroundColor: "#fff", padding: 16, borderRadius: 8, borderWidth: 1, borderColor: "#e0e0e0", marginBottom: 16 },
+  addMaterialCardText: { fontSize: 12, fontWeight: "800" },
+  quickAddForm: { padding: 16, borderRadius: 4, borderWidth: 1, marginBottom: 20 },
   inputSection: { marginTop: 10 },
   inputGroup: { marginBottom: 16 },
-  label: { fontSize: 14, color: "#444", marginBottom: 6 },
-  input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 4, padding: 12, fontSize: 16, backgroundColor: "#fff" },
-  unitLabel: { fontSize: 16, color: "#666" },
+  label: { fontSize: 13, fontWeight: "700", marginBottom: 8 },
+  input: { borderWidth: 1, borderRadius: 4, padding: 14, fontSize: 16 },
   row: { flexDirection: "row" },
-  buttonSmall: { backgroundColor: "#28a745", padding: 12, borderRadius: 6, alignItems: "center" },
-  cancelSmallBtn: { backgroundColor: "#E5E5EA", padding: 12, borderRadius: 6, alignItems: "center" },
-  btnText: { color: "#fff", fontWeight: "bold" },
-  cancelBtnText: { color: "#333", fontWeight: "bold" },
-  calculateButton: { backgroundColor: "#007AFF", padding: 18, borderRadius: 8, alignItems: "center", marginTop: 20 },
-  calculateButtonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
-  successMessage: { marginTop: 24, padding: 20, backgroundColor: "#d4edda", borderRadius: 8, alignItems: "center", borderWidth: 1, borderColor: "#c3e6cb" },
-  resultValue: { fontSize: 36, fontWeight: "bold", color: "#155724", marginBottom: 4 },
-  successText: { color: "#155724", fontWeight: "bold", fontSize: 16 },
-  
-  /* Lockout Styles */
-  lockoutArea: { flex: 1, backgroundColor: "#fff", justifyContent: 'center', alignItems: 'center' },
+  buttonSmall: { padding: 14, borderRadius: 4, alignItems: "center" },
+  cancelSmallBtn: { padding: 14, borderRadius: 4, alignItems: "center" },
+  btnText: { fontWeight: "800", fontSize: 12 },
+  cancelBtnText: { fontWeight: "800", fontSize: 12 },
+  calculateButton: { padding: 20, borderRadius: 4, alignItems: "center", marginTop: 20 },
+  calculateButtonText: { fontSize: 16, fontWeight: "800", letterSpacing: 1 },
+  successMessage: { marginTop: 32, alignItems: "center" },
+  massiveResult: { fontSize: 48, fontWeight: "900", letterSpacing: -1, marginBottom: 8 },
+  successText: { fontSize: 14, fontWeight: "700", textTransform: 'uppercase' },
+  lockoutArea: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   lockoutContainer: { padding: 30, alignItems: 'center' },
-  lockoutTitle: { fontSize: 22, fontWeight: 'bold', color: '#333', marginBottom: 10 },
-  lockoutMessage: { fontSize: 16, color: '#666', textAlign: 'center', marginBottom: 25 },
-  setupNavigateBtn: { backgroundColor: '#007AFF', paddingVertical: 12, paddingHorizontal: 25, borderRadius: 8 },
+  lockoutTitle: { fontSize: 24, fontWeight: '800', marginBottom: 10 },
+  lockoutMessage: { fontSize: 16, textAlign: 'center', marginBottom: 25 },
+  setupNavigateBtn: { paddingVertical: 14, paddingHorizontal: 30, borderRadius: 4 },
 });
 
 export default CalculatorScreen;
