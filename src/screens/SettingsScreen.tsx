@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -51,6 +51,26 @@ const SettingsScreen = () => {
   const [tmpMargin, setTmpMargin] = useState(profitMargin.toString());
   const [tmpFee, setTmpFee] = useState(wearAndTearFee.toString());
   const [tmpTax, setTmpTax] = useState(taxRate.toString());
+
+  // SYNC local state with store (CRITICAL for Factory Reset)
+  useEffect(() => {
+    setTmpName(businessName);
+    setTmpContact(contactInfo);
+    setTmpDesc(businessDescription);
+    setTmpCurrency(currencySymbol);
+    setTmpUnit(weightUnit);
+    setTmpFont(pdfFont);
+    setTmpRate(electricityRate.toString());
+    setTmpWattage(printerWattage.toString());
+    setTmpMargin(profitMargin.toString());
+    setTmpFee(wearAndTearFee.toString());
+    setTmpTax(taxRate.toString());
+    
+    // Reset wizard step if setup was revoked
+    if (!isSetupComplete) {
+      setCurrentStep(1);
+    }
+  }, [isSetupComplete, businessName, currencySymbol, weightUnit, electricityRate]);
 
   const currencyMap: { [key: string]: string } = { "USD": "$", "EUR": "€", "GBP": "£" };
   const revCurrencyMap: { [key: string]: string } = { "$": "USD", "€": "EUR", "£": "GBP" };
@@ -280,12 +300,7 @@ const SettingsScreen = () => {
               <DisplayBox label="Business Name *" value={businessName} />
               <DisplayBox label="Contact Info (Optional)" value={contactInfo} />
               <DisplayBox label="Description (Optional)" value={businessDescription} />
-              <TouchableOpacity style={styles.editBtn} onPress={() => {
-                setTmpName(businessName);
-                setTmpContact(contactInfo);
-                setTmpDesc(businessDescription);
-                setEditingProfile(true);
-              }}>
+              <TouchableOpacity style={styles.editBtn} onPress={() => setEditingProfile(true)}>
                 <Text style={styles.editBtnText}>Edit Profile</Text>
               </TouchableOpacity>
             </>
@@ -323,12 +338,7 @@ const SettingsScreen = () => {
               <DisplayBox label="Currency *" value={`${revCurrencyMap[currencySymbol] || "USD"} (${currencySymbol})`} />
               <DisplayBox label="Weight Unit *" value={weightUnit} />
               <DisplayBox label="PDF Font *" value={pdfFont} />
-              <TouchableOpacity style={styles.editBtn} onPress={() => {
-                setTmpCurrency(currencySymbol);
-                setTmpUnit(weightUnit);
-                setTmpFont(pdfFont);
-                setEditingPrefs(true);
-              }}>
+              <TouchableOpacity style={styles.editBtn} onPress={() => setEditingPrefs(true)}>
                 <Text style={styles.editBtnText}>Edit Preferences</Text>
               </TouchableOpacity>
             </>
@@ -392,14 +402,7 @@ const SettingsScreen = () => {
               <DisplayBox label="Profit Margin (%) *" value={`${profitMargin}%`} />
               <DisplayBox label={`Wear & Tear Fee (${currencySymbol}/hr) *`} value={`${currencySymbol}${wearAndTearFee}`} />
               <DisplayBox label="Tax Rate (%) (Optional)" value={`${taxRate}%`} />
-              <TouchableOpacity style={styles.editBtn} onPress={() => {
-                setTmpRate(electricityRate.toString());
-                setTmpWattage(printerWattage.toString());
-                setTmpMargin(profitMargin.toString());
-                setTmpFee(wearAndTearFee.toString());
-                setTmpTax(taxRate.toString());
-                setEditingVars(true);
-              }}>
+              <TouchableOpacity style={styles.editBtn} onPress={() => setEditingVars(true)}>
                 <Text style={styles.editBtnText}>Edit Variables</Text>
               </TouchableOpacity>
             </>
@@ -436,7 +439,7 @@ const SettingsScreen = () => {
           >
             <Text style={styles.dangerBtnText}>Clear Export History</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.dangerBtn, { marginTop: 12 }]} onPress={() => Alert.alert("Factory Reset", "Reset EVERYTHING to defaults?", [{text: "Cancel"}, {text: "Reset", style: "destructive", onPress: () => { factoryReset(); setCurrentStep(1); }}])}>
+          <TouchableOpacity style={[styles.dangerBtn, { marginTop: 12 }]} onPress={() => Alert.alert("Factory Reset", "Reset EVERYTHING to defaults?", [{text: "Cancel"}, {text: "Reset", style: "destructive", onPress: () => factoryReset()}])}>
             <Text style={styles.dangerBtnText}>Factory Reset App</Text>
           </TouchableOpacity>
         </View>
