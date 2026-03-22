@@ -24,8 +24,8 @@ const ExportScreen = () => {
   const {
     recentQuotes,
     businessName,
-    setBusinessName,
-    contactInfo,
+    businessEmail,
+    businessPhone,
     businessDescription,
     currencySymbol,
     pdfFont,
@@ -35,6 +35,14 @@ const ExportScreen = () => {
   } = useStore();
 
   const [selectedQuote, setSelectedQuote] = useState<QuoteRecord | null>(null);
+  
+  // Invoice Customization Toggles
+  const [showBusinessName, setShowBusinessName] = useState(true);
+  const [showBusinessEmail, setShowBusinessEmail] = useState(true);
+  const [showBusinessPhone, setShowBusinessPhone] = useState(true);
+  const [showBusinessDesc, setShowBusinessDesc] = useState(true);
+
+  // Client Details Local State
   const [clientName, setClientName] = useState("");
   const [description, setDescription] = useState("");
   
@@ -64,18 +72,6 @@ const ExportScreen = () => {
     const dateStr = date.toLocaleDateString();
     const fontStack = pdfFont === "Times New Roman" ? "'Times New Roman', Times, serif" : "'Helvetica Neue', Helvetica, Arial, sans-serif";
 
-    const breakdownRows = `
-      <tr><td>Material Cost (${selectedQuote.materialName})</td><td class="amount">${selectedQuote.currencySymbol}${selectedQuote.materialCost.toFixed(2)}</td></tr>
-      <tr><td>Electricity Cost</td><td class="amount">${selectedQuote.currencySymbol}${selectedQuote.electricityCost.toFixed(2)}</td></tr>
-      <tr><td>Wear & Tear Fee</td><td class="amount">${selectedQuote.currencySymbol}${selectedQuote.wearAndTearCost.toFixed(2)}</td></tr>
-      <tr><td>Profit Margin (${profitMargin}%)</td><td class="amount">${selectedQuote.currencySymbol}${marginAmount.toFixed(2)}</td></tr>
-      ${selectedQuote.taxAmount > 0 ? `<tr><td>Tax (${taxRate}%)</td><td class="amount">${selectedQuote.currencySymbol}${selectedQuote.taxAmount.toFixed(2)}</td></tr>` : ""}
-    `;
-
-    const simpleRow = `
-      <tr><td>Custom 3D Print - ${selectedQuote.materialName}</td><td class="amount">${selectedQuote.currencySymbol}${selectedQuote.finalQuote.toFixed(2)}</td></tr>
-    `;
-
     return `
       <html>
         <head>
@@ -103,10 +99,11 @@ const ExportScreen = () => {
         <body>
           <div class="header">
             <div>
-              <div class="business-name">${businessName || "Invoice"}</div>
+              ${showBusinessName ? `<div class="business-name">${businessName || "Invoice"}</div>` : ""}
               <div class="business-info">
-                ${contactInfo ? `<div>${contactInfo}</div>` : ""}
-                ${businessDescription ? `<div>${businessDescription}</div>` : ""}
+                ${showBusinessEmail && businessEmail ? `<div>${businessEmail}</div>` : ""}
+                ${showBusinessPhone && businessPhone ? `<div>${businessPhone}</div>` : ""}
+                ${showBusinessDesc && businessDescription ? `<div>${businessDescription}</div>` : ""}
               </div>
             </div>
             <div class="invoice-info">
@@ -130,7 +127,15 @@ const ExportScreen = () => {
               </tr>
             </thead>
             <tbody>
-              ${isDetailed ? breakdownRows : simpleRow}
+              ${isDetailed ? `
+                <tr><td>Material Cost (${selectedQuote.materialName})</td><td class="amount">${selectedQuote.currencySymbol}${selectedQuote.materialCost.toFixed(2)}</td></tr>
+                <tr><td>Electricity Cost</td><td class="amount">${selectedQuote.currencySymbol}${selectedQuote.electricityCost.toFixed(2)}</td></tr>
+                <tr><td>Wear & Tear Fee</td><td class="amount">${selectedQuote.currencySymbol}${selectedQuote.wearAndTearCost.toFixed(2)}</td></tr>
+                <tr><td>Profit Margin (${profitMargin}%)</td><td class="amount">${selectedQuote.currencySymbol}${marginAmount.toFixed(2)}</td></tr>
+                ${selectedQuote.taxAmount > 0 ? `<tr><td>Tax (${taxRate}%)</td><td class="amount">${selectedQuote.currencySymbol}${selectedQuote.taxAmount.toFixed(2)}</td></tr>` : ""}
+              ` : `
+                <tr><td>Custom 3D Print - ${selectedQuote.materialName}</td><td class="amount">${selectedQuote.currencySymbol}${selectedQuote.finalQuote.toFixed(2)}</td></tr>
+              `}
             </tbody>
           </table>
 
@@ -184,6 +189,15 @@ const ExportScreen = () => {
     }
   };
 
+  const ToggleItem = ({ label, value, onToggle }: { label: string, value: boolean, onToggle: (v: boolean) => void }) => (
+    <TouchableOpacity 
+      style={[styles.toggleItem, value && styles.toggleItemActive]} 
+      onPress={() => onToggle(!value)}
+    >
+      <Text style={[styles.toggleItemText, value && styles.toggleItemTextActive]}>{label}</Text>
+    </TouchableOpacity>
+  );
+
   if (selectedQuote) {
     /* View B: Invoice Setup Form */
     return (
@@ -195,25 +209,24 @@ const ExportScreen = () => {
 
           <Text style={styles.header}>Invoice Setup</Text>
 
-          <View style={styles.section}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Business / Your Name *</Text>
-              <TextInput
-                style={styles.input}
-                value={businessName}
-                onChangeText={setBusinessName}
-                placeholder="e.g. Acme 3D Printing"
-              />
-              <Text style={styles.subtext}>Appears permanently on all invoices.</Text>
-            </View>
+          <Text style={styles.sectionTitle}>1. Business Details</Text>
+          <Text style={styles.helperText}>Select which details to display on this invoice.</Text>
+          <View style={styles.toggleGrid}>
+            <ToggleItem label="Business Name" value={showBusinessName} onToggle={setShowBusinessName} />
+            <ToggleItem label="Email" value={showBusinessEmail} onToggle={setShowBusinessEmail} />
+            <ToggleItem label="Phone" value={showBusinessPhone} onToggle={setShowBusinessPhone} />
+            <ToggleItem label="Description" value={showBusinessDesc} onToggle={setShowBusinessDesc} />
+          </View>
 
+          <Text style={styles.sectionTitle}>2. Client Details</Text>
+          <Text style={styles.helperText}>These details will appear on the invoice.</Text>
+          <View style={styles.section}>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Client Name (Optional)</Text>
               <TextInput
                 style={styles.input}
                 value={clientName}
                 onChangeText={setClientName}
-                placeholder="e.g. John Doe"
               />
             </View>
 
@@ -223,7 +236,6 @@ const ExportScreen = () => {
                 style={[styles.input, { height: 80 }]}
                 value={description}
                 onChangeText={setDescription}
-                placeholder="e.g. Custom Prototype Part"
                 multiline
               />
             </View>
@@ -249,7 +261,7 @@ const ExportScreen = () => {
             </View>
           </View>
 
-          <Text style={styles.sectionTitle}>Invoice Type</Text>
+          <Text style={styles.sectionTitle}>3. Invoice Type</Text>
           <View style={styles.toggleRow}>
             <TouchableOpacity
               onPress={() => setIsDetailed(true)}
@@ -264,6 +276,11 @@ const ExportScreen = () => {
               <Text style={[styles.toggleBtnText, !isDetailed && styles.toggleBtnTextActive]}>Simple</Text>
             </TouchableOpacity>
           </View>
+          <Text style={styles.helperText}>
+            {isDetailed 
+              ? "Detailed: Shows itemized costs for material, power, wear, and margin." 
+              : "Simple: Shows only the material name and the final total quote."}
+          </Text>
 
           <TouchableOpacity style={styles.previewBtn} onPress={() => setIsPreviewVisible(true)}>
             <Text style={styles.previewBtnText}>Preview PDF</Text>
@@ -359,20 +376,25 @@ const styles = StyleSheet.create({
   backButton: { marginBottom: 15 },
   backButtonText: { color: "#007AFF", fontWeight: "bold", fontSize: 16 },
   section: { backgroundColor: "#fff", padding: 16, borderRadius: 8, borderWidth: 1, borderColor: "#e0e0e0", marginBottom: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: "600", color: "#666", marginBottom: 12 },
+  sectionTitle: { fontSize: 18, fontWeight: "600", color: "#666", marginBottom: 4, marginTop: 12 },
   inputGroup: { marginBottom: 16 },
   label: { fontSize: 14, color: "#444", marginBottom: 6 },
   input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 4, padding: 12, fontSize: 16, backgroundColor: "#fff" },
   dateDisplay: { borderWidth: 1, borderColor: "#ccc", borderRadius: 4, padding: 12, backgroundColor: "#fff", flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   dateDisplayText: { fontSize: 16, color: "#333" },
   dateChangeText: { fontSize: 12, color: "#007AFF", fontWeight: "bold" },
-  subtext: { fontSize: 12, color: "#999", marginTop: 4 },
-  toggleRow: { flexDirection: "row", marginBottom: 24, borderRadius: 8, overflow: "hidden", borderWidth: 1, borderColor: "#007AFF" },
+  helperText: { fontSize: 12, color: "#888", marginBottom: 12 },
+  toggleGrid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 },
+  toggleItem: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1, borderColor: "#ccc", marginRight: 8, marginBottom: 8, backgroundColor: "#fff" },
+  toggleItemActive: { backgroundColor: "#007AFF", borderColor: "#007AFF" },
+  toggleItemText: { fontSize: 13, color: "#666", fontWeight: "500" },
+  toggleItemTextActive: { color: "#fff" },
+  toggleRow: { flexDirection: "row", marginBottom: 8, borderRadius: 8, overflow: "hidden", borderWidth: 1, borderColor: "#007AFF" },
   toggleBtn: { flex: 1, padding: 12, alignItems: "center", backgroundColor: "#fff" },
   toggleBtnActive: { backgroundColor: "#007AFF" },
   toggleBtnText: { color: "#007AFF", fontWeight: "bold" },
   toggleBtnTextActive: { color: "#fff" },
-  previewBtn: { backgroundColor: "#6c757d", padding: 18, borderRadius: 8, alignItems: "center", marginBottom: 12 },
+  previewBtn: { backgroundColor: "#6c757d", padding: 18, borderRadius: 8, alignItems: "center", marginBottom: 12, marginTop: 12 },
   previewBtnText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
   actionRow: { flexDirection: "row", justifyContent: "space-between" },
   exportBtn: { backgroundColor: "#28a745", padding: 18, borderRadius: 8, alignItems: "center" },

@@ -28,7 +28,9 @@ const CalculatorScreen = () => {
     addQuoteToHistory,
   } = useStore();
 
-  const [selectedMaterialId, setSelectedMaterialId] = useState<string | null>(null);
+  const [selectedMaterialId, setSelectedMaterialId] = useState<string | null>(
+    null,
+  );
   const [printHours, setPrintHours] = useState("");
   const [modelWeight, setModelWeight] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -46,10 +48,9 @@ const CalculatorScreen = () => {
           <Text style={styles.lockoutMessage}>
             Please configure your global settings before calculating quotes.
           </Text>
-          <TouchableOpacity 
-            style={styles.setupNavigateBtn} 
-            onPress={() => navigation.navigate('Settings')}
-          >
+          <TouchableOpacity
+            style={styles.setupNavigateBtn}
+            onPress={() => navigation.navigate("Settings")}>
             <Text style={styles.btnText}>Go to Settings</Text>
           </TouchableOpacity>
         </View>
@@ -126,43 +127,64 @@ const CalculatorScreen = () => {
 
         {/* Section 1: Material Selection */}
         <Text style={styles.sectionTitle}>1. Select Material</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.horizontalScroll}>
           {materials.map((m) => (
             <TouchableOpacity
               key={m.id}
-              style={[styles.materialCard, selectedMaterialId === m.id && styles.materialCardActive]}
-              onPress={() => setSelectedMaterialId(m.id)}
-            >
-              <Text style={[styles.materialCardText, selectedMaterialId === m.id && styles.materialCardTextActive]}>
+              style={[
+                styles.materialCard,
+                selectedMaterialId === m.id && styles.materialCardActive,
+              ]}
+              onPress={() => setSelectedMaterialId(m.id)}>
+              <Text
+                style={[
+                  styles.materialCardText,
+                  selectedMaterialId === m.id && styles.materialCardTextActive,
+                ]}>
                 {m.name}
               </Text>
-              <Text style={[styles.materialCardSub, selectedMaterialId === m.id && styles.materialCardTextActive]}>
-                {currencySymbol}{m.price}/{weightUnit}
+              <Text
+                style={[
+                  styles.materialCardSub,
+                  selectedMaterialId === m.id && styles.materialCardTextActive,
+                ]}>
+                {currencySymbol}
+                {m.price}/{weightUnit}
               </Text>
             </TouchableOpacity>
           ))}
           <TouchableOpacity
             style={[styles.materialCard, styles.addMaterialCard]}
-            onPress={() => setIsAddingMaterial(!isAddingMaterial)}
-          >
-            <Text style={styles.addMaterialCardText}>{isAddingMaterial ? "Cancel" : "+ Add New"}</Text>
+            onPress={() => setIsAddingMaterial(!isAddingMaterial)}>
+            <Text style={styles.addMaterialCardText}>
+              {isAddingMaterial ? "Cancel" : "+ Add New"}
+            </Text>
           </TouchableOpacity>
         </ScrollView>
 
         {isAddingMaterial && (
           <View style={styles.quickAddForm}>
-            <TextInput style={styles.input} placeholder="Material Name" value={newName} onChangeText={setNewName} />
-            <View style={[styles.row, { marginTop: 8, alignItems: 'center' }]}>
-              <TextInput 
-                style={[styles.input, { flex: 1, marginRight: 8 }]} 
-                placeholder={`Price (${currencySymbol})`} 
-                value={newPrice} 
-                onChangeText={setNewPrice} 
-                keyboardType="numeric" 
+            <TextInput
+              style={styles.input}
+              value={newName}
+              onChangeText={setNewName}
+            />
+            <View style={[styles.row, { marginTop: 8, alignItems: "center" }]}>
+              <TextInput
+                style={[styles.input, { flex: 1, marginRight: 8 }]}
+                placeholder={`Price (${currencySymbol})`}
+                value={newPrice}
+                onChangeText={setNewPrice}
+                keyboardType="numeric"
               />
               <Text style={styles.unitLabel}>per {weightUnit}</Text>
             </View>
-            <TouchableOpacity style={styles.buttonSmall} onPress={handleQuickAdd}>
+            <TouchableOpacity
+              style={styles.buttonSmall}
+              onPress={handleQuickAdd}>
               <Text style={styles.btnText}>Quick Add & Select</Text>
             </TouchableOpacity>
           </View>
@@ -175,7 +197,6 @@ const CalculatorScreen = () => {
             <Text style={styles.label}>Print Time (Hours)</Text>
             <TextInput
               style={styles.input}
-              placeholder="e.g. 10"
               value={printHours}
               onChangeText={setPrintHours}
               keyboardType="numeric"
@@ -186,7 +207,6 @@ const CalculatorScreen = () => {
             <Text style={styles.label}>Model Weight ({weightUnit})</Text>
             <TextInput
               style={styles.input}
-              placeholder="e.g. 0.5"
               value={modelWeight}
               onChangeText={setModelWeight}
               keyboardType="numeric"
@@ -195,7 +215,9 @@ const CalculatorScreen = () => {
         </View>
 
         {/* Section 3: Calculate Button */}
-        <TouchableOpacity style={styles.calculateButton} onPress={handleCalculate}>
+        <TouchableOpacity
+          style={styles.calculateButton}
+          onPress={handleCalculate}>
           <Text style={styles.calculateButtonText}>Calculate Final Quote</Text>
         </TouchableOpacity>
 
@@ -214,7 +236,12 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#f5f5f5" },
   container: { padding: 16 },
   header: { fontSize: 24, fontWeight: "bold", marginBottom: 20, color: "#333" },
-  sectionTitle: { fontSize: 18, fontWeight: "600", color: "#666", marginBottom: 12 },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#666",
+    marginBottom: 12,
+  },
   horizontalScroll: { flexDirection: "row", marginBottom: 16 },
   materialCard: {
     backgroundColor: "#fff",
@@ -232,26 +259,79 @@ const styles = StyleSheet.create({
   materialCardTextActive: { color: "#fff" },
   addMaterialCard: { borderStyle: "dashed", justifyContent: "center" },
   addMaterialCardText: { color: "#007AFF", fontWeight: "bold" },
-  quickAddForm: { backgroundColor: "#fff", padding: 16, borderRadius: 8, borderWidth: 1, borderColor: "#e0e0e0", marginBottom: 16 },
+  quickAddForm: {
+    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    marginBottom: 16,
+  },
   inputSection: { marginTop: 10 },
   inputGroup: { marginBottom: 16 },
   label: { fontSize: 14, color: "#444", marginBottom: 6 },
-  input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 4, padding: 12, fontSize: 16, backgroundColor: "#fff" },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 4,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: "#fff",
+  },
   unitLabel: { fontSize: 16, color: "#666" },
   row: { flexDirection: "row" },
-  buttonSmall: { backgroundColor: "#28a745", padding: 12, borderRadius: 6, alignItems: "center" },
+  buttonSmall: {
+    backgroundColor: "#28a745",
+    padding: 12,
+    borderRadius: 6,
+    alignItems: "center",
+  },
   btnText: { color: "#fff", fontWeight: "bold" },
-  calculateButton: { backgroundColor: "#007AFF", padding: 18, borderRadius: 8, alignItems: "center", marginTop: 20 },
+  calculateButton: {
+    backgroundColor: "#007AFF",
+    padding: 18,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 20,
+  },
   calculateButtonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
-  successMessage: { marginTop: 20, padding: 15, backgroundColor: "#d4edda", borderRadius: 8, alignItems: "center", borderWidth: 1, borderColor: "#c3e6cb" },
+  successMessage: {
+    marginTop: 20,
+    padding: 15,
+    backgroundColor: "#d4edda",
+    borderRadius: 8,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#c3e6cb",
+  },
   successText: { color: "#155724", fontWeight: "bold", fontSize: 16 },
-  
+
   /* Lockout Styles */
-  lockoutArea: { flex: 1, backgroundColor: "#fff", justifyContent: 'center', alignItems: 'center' },
-  lockoutContainer: { padding: 30, alignItems: 'center' },
-  lockoutTitle: { fontSize: 22, fontWeight: 'bold', color: '#333', marginBottom: 10 },
-  lockoutMessage: { fontSize: 16, color: '#666', textAlign: 'center', marginBottom: 25 },
-  setupNavigateBtn: { backgroundColor: '#007AFF', paddingVertical: 12, paddingHorizontal: 25, borderRadius: 8 },
+  lockoutArea: {
+    flex: 1,
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  lockoutContainer: { padding: 30, alignItems: "center" },
+  lockoutTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 10,
+  },
+  lockoutMessage: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 25,
+  },
+  setupNavigateBtn: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 8,
+  },
 });
 
 export default CalculatorScreen;
