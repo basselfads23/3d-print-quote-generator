@@ -6,15 +6,17 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   FlatList,
   Platform,
   Modal,
+  Alert,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
-import * as FileSystem from "expo-file-system";
+import { Directory, File } from "expo-file-system";
+
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useStore, QuoteRecord } from "../store/useStore";
 
@@ -146,23 +148,23 @@ const ExportScreen = () => {
   const handleDownload = async () => {
     try {
       const html = generateHTML();
-      const { uri } = await Print.printToFileAsync({ html });
+      const { uri: tempUri } = await Print.printToFileAsync({ html });
       
       if (Platform.OS === 'android') {
-        const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
-        if (permissions.granted) {
-          const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
-          const newUri = await FileSystem.StorageAccessFramework.createFileAsync(
-            permissions.directoryUri,
-            `Invoice_${Date.now()}.pdf`,
-            'application/pdf'
-          );
-          await FileSystem.writeAsStringAsync(newUri, base64, { encoding: FileSystem.EncodingType.Base64 });
+        // Use New SDK 54 API: Directory.pickDirectoryAsync
+        const directory = await Directory.pickDirectoryAsync();
+        if (directory) {
+          const tempFile = new File(tempUri);
+          const base64Content = await tempFile.base64();
+          
+          const newFile = directory.createFile(`Invoice_${Date.now()}.pdf`, 'application/pdf');
+          newFile.write(base64Content, { encoding: 'base64' });
+          
           Alert.alert("Success", "Invoice saved to the selected folder.");
         }
       } else {
         // iOS: Share sheet also doubles as save to files
-        await Sharing.shareAsync(uri);
+        await Sharing.shareAsync(tempUri);
       }
     } catch (error) {
       console.error("Error downloading:", error);
