@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -10,69 +10,31 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useStore, MaterialProfile } from "../store/useStore";
 
-const VaultScreen = () => {
+const MaterialsScreen = () => {
   const {
-    electricityRate,
-    printerWattage,
-    profitMargin,
-    wearAndTearFee,
     materials,
-    setElectricityRate,
-    setPrinterWattage,
-    setProfitMargin,
-    setWearAndTearFee,
+    weightUnit,
+    currencySymbol,
     addMaterial,
     updateMaterial,
     removeMaterial,
   } = useStore();
 
-  // Edit Mode State for Global Settings
-  const [isEditingSettings, setIsEditingSettings] = useState(false);
-  const [tempRate, setTempRate] = useState(electricityRate.toString());
-  const [tempWattage, setTempWattage] = useState(printerWattage.toString());
-  const [tempMargin, setTempMargin] = useState(profitMargin.toString());
-  const [tempFee, setTempFee] = useState(wearAndTearFee.toString());
-
   // New Material Form State
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
-  const [unit, setUnit] = useState("kg");
 
   // Per-Material Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editPrice, setEditPrice] = useState("");
-  const [editUnit, setEditUnit] = useState("");
 
   // Per-Material Delete Confirmation State
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  const handleEditToggle = () => {
-    if (isEditingSettings) {
-      setTempRate(electricityRate.toString());
-      setTempWattage(printerWattage.toString());
-      setTempMargin(profitMargin.toString());
-      setTempFee(wearAndTearFee.toString());
-    } else {
-      setTempRate(electricityRate.toString());
-      setTempWattage(printerWattage.toString());
-      setTempMargin(profitMargin.toString());
-      setTempFee(wearAndTearFee.toString());
-    }
-    setIsEditingSettings(!isEditingSettings);
-  };
-
-  const handleSaveSettings = () => {
-    setElectricityRate(parseFloat(tempRate) || 0);
-    setPrinterWattage(parseFloat(tempWattage) || 0);
-    setProfitMargin(parseFloat(tempMargin) || 0);
-    setWearAndTearFee(parseFloat(tempFee) || 0);
-    setIsEditingSettings(false);
-  };
-
   const handleAddMaterial = () => {
     if (name && price) {
-      addMaterial({ name, price: parseFloat(price), unit });
+      addMaterial({ name, price: parseFloat(price) });
       setName("");
       setPrice("");
     }
@@ -82,7 +44,6 @@ const VaultScreen = () => {
     setEditingId(item.id);
     setEditName(item.name);
     setEditPrice(item.price.toString());
-    setEditUnit(item.unit);
   };
 
   const saveEditedMaterial = () => {
@@ -90,77 +51,35 @@ const VaultScreen = () => {
       updateMaterial(editingId, {
         name: editName,
         price: parseFloat(editPrice),
-        unit: editUnit,
       });
       setEditingId(null);
     }
   };
 
-  const renderSectionHeader = (title: string, action?: React.ReactNode) => (
+  const renderSectionHeader = (title: string) => (
     <View style={styles.sectionHeaderRow}>
       <Text style={styles.sectionTitle}>{title}</Text>
-      {action}
-    </View>
-  );
-
-  const UnitSelector = ({ selected, onSelect }: { selected: string; onSelect: (u: string) => void }) => (
-    <View style={styles.unitSelector}>
-      {["g", "kg", "lb"].map((u) => (
-        <TouchableOpacity
-          key={u}
-          onPress={() => onSelect(u)}
-          style={[styles.unitButton, selected === u && styles.unitButtonActive]}
-        >
-          <Text style={[styles.unitButtonText, selected === u && styles.unitButtonTextActive]}>
-            {u}
-          </Text>
-        </TouchableOpacity>
-      ))}
     </View>
   );
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.header}>Material Profiles & Settings</Text>
-
-        {/* Global Settings */}
-        {renderSectionHeader(
-          "Global Settings",
-          <TouchableOpacity onPress={handleEditToggle} style={styles.editLink}>
-            <Text style={styles.editLinkText}>{isEditingSettings ? "Cancel" : "Edit"}</Text>
-          </TouchableOpacity>
-        )}
-        <View style={styles.section}>
-          {[
-            { label: "Electricity Rate ($/kWh)", val: isEditingSettings ? tempRate : electricityRate, set: setTempRate },
-            { label: "Printer Wattage (W)", val: isEditingSettings ? tempWattage : printerWattage, set: setTempWattage },
-            { label: "Profit Margin (%)", val: isEditingSettings ? tempMargin : profitMargin, set: setTempMargin },
-            { label: "Wear & Tear Fee ($/hr)", val: isEditingSettings ? tempFee : wearAndTearFee, set: setTempFee },
-          ].map((item, idx) => (
-            <View key={idx} style={styles.inputGroup}>
-              <Text style={styles.label}>{item.label}</Text>
-              {isEditingSettings ? (
-                <TextInput style={styles.input} value={item.val.toString()} onChangeText={item.set} keyboardType="numeric" />
-              ) : (
-                <View style={styles.readOnlyBox}><Text style={styles.readOnlyText}>{item.val}</Text></View>
-              )}
-            </View>
-          ))}
-          {isEditingSettings && (
-            <TouchableOpacity style={styles.saveButton} onPress={handleSaveSettings}>
-              <Text style={styles.buttonText}>Save Settings</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        <Text style={styles.header}>Material Management</Text>
 
         {/* Add New Material */}
         {renderSectionHeader("Add New Material")}
         <View style={styles.section}>
           <TextInput style={styles.input} placeholder="Material Name" value={name} onChangeText={setName} />
-          <View style={[styles.row, { marginTop: 8 }]}>
-            <TextInput style={[styles.input, { flex: 2, marginRight: 8 }]} placeholder="Price ($)" value={price} onChangeText={setPrice} keyboardType="numeric" />
-            <UnitSelector selected={unit} onSelect={setUnit} />
+          <View style={[styles.row, { marginTop: 8, alignItems: 'center' }]}>
+            <TextInput 
+              style={[styles.input, { flex: 1, marginRight: 8 }]} 
+              placeholder={`Price (${currencySymbol})`} 
+              value={price} 
+              onChangeText={setPrice} 
+              keyboardType="numeric" 
+            />
+            <Text style={styles.unitLabel}>per {weightUnit}</Text>
           </View>
           <TouchableOpacity style={styles.button} onPress={handleAddMaterial}>
             <Text style={styles.buttonText}>Save Material</Text>
@@ -179,9 +98,14 @@ const VaultScreen = () => {
                   /* EDIT MODE */
                   <View style={{ flex: 1 }}>
                     <TextInput style={styles.input} value={editName} onChangeText={setEditName} />
-                    <View style={[styles.row, { marginTop: 8 }]}>
-                      <TextInput style={[styles.input, { flex: 2, marginRight: 8 }]} value={editPrice} onChangeText={setEditPrice} keyboardType="numeric" />
-                      <UnitSelector selected={editUnit} onSelect={setEditUnit} />
+                    <View style={[styles.row, { marginTop: 8, alignItems: 'center' }]}>
+                      <TextInput 
+                        style={[styles.input, { flex: 1, marginRight: 8 }]} 
+                        value={editPrice} 
+                        onChangeText={setEditPrice} 
+                        keyboardType="numeric" 
+                      />
+                      <Text style={styles.unitLabel}>per {weightUnit}</Text>
                     </View>
                     <View style={[styles.row, { marginTop: 8 }]}>
                       <TouchableOpacity style={[styles.saveSmallButton, { flex: 1, marginRight: 4 }]} onPress={saveEditedMaterial}>
@@ -210,7 +134,7 @@ const VaultScreen = () => {
                   <>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.materialName}>{item.name}</Text>
-                      <Text style={styles.materialDetails}>${item.price} per {item.unit}</Text>
+                      <Text style={styles.materialDetails}>{currencySymbol}{item.price} per {weightUnit}</Text>
                     </View>
                     <View style={styles.materialActions}>
                       <TouchableOpacity style={styles.editActionButton} onPress={() => startEditingMaterial(item)}>
@@ -237,21 +161,10 @@ const styles = StyleSheet.create({
   header: { fontSize: 24, fontWeight: "bold", marginBottom: 24, color: "#333" },
   sectionHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12, marginTop: 12 },
   sectionTitle: { fontSize: 18, fontWeight: "600", color: "#666" },
-  editLink: { padding: 4 },
-  editLinkText: { color: "#007AFF", fontWeight: "bold" },
   section: { backgroundColor: "#fff", padding: 16, borderRadius: 8, borderWidth: 1, borderColor: "#e0e0e0", marginBottom: 16 },
-  inputGroup: { marginBottom: 12 },
-  label: { fontSize: 14, color: "#444", marginBottom: 4 },
   input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 4, padding: 10, fontSize: 16 },
-  readOnlyBox: { padding: 10, backgroundColor: "#f9f9f9", borderRadius: 4, borderWidth: 1, borderColor: "#eee" },
-  readOnlyText: { fontSize: 16, color: "#333" },
+  unitLabel: { fontSize: 16, color: "#666" },
   row: { flexDirection: "row" },
-  unitSelector: { flexDirection: "row", flex: 1.5, borderWidth: 1, borderColor: "#ccc", borderRadius: 4, overflow: "hidden" },
-  unitButton: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#fff" },
-  unitButtonActive: { backgroundColor: "#007AFF" },
-  unitButtonText: { fontSize: 14, color: "#666" },
-  unitButtonTextActive: { color: "#fff", fontWeight: "bold" },
-  saveButton: { backgroundColor: "#28a745", padding: 15, borderRadius: 8, alignItems: "center", marginTop: 8 },
   button: { backgroundColor: "#007AFF", padding: 15, borderRadius: 8, alignItems: "center", marginTop: 8 },
   buttonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
   materialItem: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#eee" },
@@ -273,4 +186,4 @@ const styles = StyleSheet.create({
   emptyText: { textAlign: "center", color: "#999", paddingVertical: 10 },
 });
 
-export default VaultScreen;
+export default MaterialsScreen;

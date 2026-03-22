@@ -6,7 +6,7 @@ export interface MaterialProfile {
   id: string;
   name: string;
   price: number;
-  unit: string; // "g", "kg", "lb"
+  unit: string; // Inherited from global weightUnit
 }
 
 export interface QuoteRecord {
@@ -19,55 +19,96 @@ export interface QuoteRecord {
   electricityCost: number;
   wearAndTearCost: number;
   baseCost: number;
+  taxAmount: number;
   finalQuote: number;
   timestamp: number;
+  currencySymbol: string;
 }
 
 interface StoreState {
+  // User Profile
+  businessName: string;
+  contactInfo: string;
+  businessDescription: string;
+  
+  // App Preferences
+  currencySymbol: string;
+  weightUnit: string; // "g", "kg", "lb"
+  pdfFont: string; // "Helvetica" | "Times New Roman"
+  
+  // Print Variables
   electricityRate: number;
   printerWattage: number;
   profitMargin: number;
   wearAndTearFee: number;
+  taxRate: number;
+  
+  // Data
   materials: MaterialProfile[];
-  businessName: string;
   recentQuotes: QuoteRecord[];
 
+  // Actions
+  setBusinessName: (name: string) => void;
+  setContactInfo: (info: string) => void;
+  setBusinessDescription: (desc: string) => void;
+  setCurrencySymbol: (symbol: string) => void;
+  setWeightUnit: (unit: string) => void;
+  setPdfFont: (font: string) => void;
   setElectricityRate: (rate: number) => void;
   setPrinterWattage: (wattage: number) => void;
   setProfitMargin: (margin: number) => void;
   setWearAndTearFee: (fee: number) => void;
-  setBusinessName: (name: string) => void;
-  addMaterial: (material: Omit<MaterialProfile, "id">) => void;
+  setTaxRate: (rate: number) => void;
+  
+  addMaterial: (material: Omit<MaterialProfile, "id" | "unit">) => void;
   updateMaterial: (id: string, material: Partial<Omit<MaterialProfile, "id">>) => void;
   removeMaterial: (id: string) => void;
-  addQuoteToHistory: (quote: Omit<QuoteRecord, "id" | "timestamp">) => void;
+  addQuoteToHistory: (quote: Omit<QuoteRecord, "id" | "timestamp" | "currencySymbol">) => void;
   clearOldQuotes: () => void;
+  clearAllQuotes: () => void;
+  factoryReset: () => void;
 }
 
 const EXPIRE_TIME = 12 * 60 * 60 * 1000; // 12 hours
 
+const initialState = {
+  businessName: "",
+  contactInfo: "",
+  businessDescription: "",
+  currencySymbol: "$",
+  weightUnit: "g",
+  pdfFont: "Helvetica",
+  electricityRate: 0.15,
+  printerWattage: 300,
+  profitMargin: 50,
+  wearAndTearFee: 0.50,
+  taxRate: 0,
+  materials: [],
+  recentQuotes: [],
+};
+
 export const useStore = create<StoreState>()(
   persist(
     (set) => ({
-      electricityRate: 0.15,
-      printerWattage: 300,
-      profitMargin: 50,
-      wearAndTearFee: 0.50,
-      materials: [],
-      businessName: "",
-      recentQuotes: [],
+      ...initialState,
 
+      setBusinessName: (name) => set({ businessName: name }),
+      setContactInfo: (info) => set({ contactInfo: info }),
+      setBusinessDescription: (desc) => set({ businessDescription: desc }),
+      setCurrencySymbol: (symbol) => set({ currencySymbol: symbol }),
+      setWeightUnit: (unit) => set({ weightUnit: unit }),
+      setPdfFont: (font) => set({ pdfFont: font }),
       setElectricityRate: (rate) => set({ electricityRate: rate }),
       setPrinterWattage: (wattage) => set({ printerWattage: wattage }),
       setProfitMargin: (margin) => set({ profitMargin: margin }),
       setWearAndTearFee: (fee) => set({ wearAndTearFee: fee }),
-      setBusinessName: (name) => set({ businessName: name }),
+      setTaxRate: (rate) => set({ taxRate: rate }),
 
       addMaterial: (material) =>
         set((state) => ({
           materials: [
             ...state.materials,
-            { ...material, id: Date.now().toString() },
+            { ...material, id: Date.now().toString(), unit: state.weightUnit },
           ],
         })),
 
@@ -90,6 +131,7 @@ export const useStore = create<StoreState>()(
             ...quote,
             id: now.toString(),
             timestamp: now,
+            currencySymbol: state.currencySymbol,
           };
           const filteredHistory = state.recentQuotes.filter(
             (q) => now - q.timestamp < EXPIRE_TIME
@@ -108,6 +150,10 @@ export const useStore = create<StoreState>()(
             ),
           };
         }),
+        
+      clearAllQuotes: () => set({ recentQuotes: [] }),
+      
+      factoryReset: () => set(initialState),
     }),
     {
       name: "3d-quote-storage",

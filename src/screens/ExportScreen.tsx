@@ -25,6 +25,11 @@ const ExportScreen = () => {
     recentQuotes,
     businessName,
     setBusinessName,
+    contactInfo,
+    businessDescription,
+    currencySymbol,
+    pdfFont,
+    taxRate,
     clearOldQuotes,
     profitMargin,
   } = useStore();
@@ -57,16 +62,18 @@ const ExportScreen = () => {
 
     const marginAmount = selectedQuote.baseCost * (profitMargin / 100);
     const dateStr = date.toLocaleDateString();
+    const fontStack = pdfFont === "Times New Roman" ? "'Times New Roman', Times, serif" : "'Helvetica Neue', Helvetica, Arial, sans-serif";
 
     const breakdownRows = `
-      <tr><td>Material Cost (${selectedQuote.materialName})</td><td class="amount">$${selectedQuote.materialCost.toFixed(2)}</td></tr>
-      <tr><td>Electricity Cost</td><td class="amount">$${selectedQuote.electricityCost.toFixed(2)}</td></tr>
-      <tr><td>Wear & Tear Fee</td><td class="amount">$${selectedQuote.wearAndTearCost.toFixed(2)}</td></tr>
-      <tr><td>Profit Margin (${profitMargin}%)</td><td class="amount">$${marginAmount.toFixed(2)}</td></tr>
+      <tr><td>Material Cost (${selectedQuote.materialName})</td><td class="amount">${selectedQuote.currencySymbol}${selectedQuote.materialCost.toFixed(2)}</td></tr>
+      <tr><td>Electricity Cost</td><td class="amount">${selectedQuote.currencySymbol}${selectedQuote.electricityCost.toFixed(2)}</td></tr>
+      <tr><td>Wear & Tear Fee</td><td class="amount">${selectedQuote.currencySymbol}${selectedQuote.wearAndTearCost.toFixed(2)}</td></tr>
+      <tr><td>Profit Margin (${profitMargin}%)</td><td class="amount">${selectedQuote.currencySymbol}${marginAmount.toFixed(2)}</td></tr>
+      ${selectedQuote.taxAmount > 0 ? `<tr><td>Tax (${taxRate}%)</td><td class="amount">${selectedQuote.currencySymbol}${selectedQuote.taxAmount.toFixed(2)}</td></tr>` : ""}
     `;
 
     const simpleRow = `
-      <tr><td>Custom 3D Print - ${selectedQuote.materialName}</td><td class="amount">$${selectedQuote.finalQuote.toFixed(2)}</td></tr>
+      <tr><td>Custom 3D Print - ${selectedQuote.materialName}</td><td class="amount">${selectedQuote.currencySymbol}${selectedQuote.finalQuote.toFixed(2)}</td></tr>
     `;
 
     return `
@@ -74,15 +81,16 @@ const ExportScreen = () => {
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
           <style>
-            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 20px; color: #333; }
-            .header { border-bottom: 2px solid #007AFF; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+            body { font-family: ${fontStack}; padding: 20px; color: #333; }
+            .header { border-bottom: 2px solid #007AFF; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-start; }
             .business-name { font-size: 24px; font-weight: bold; color: #007AFF; }
+            .business-info { font-size: 12px; color: #666; margin-top: 5px; }
             .invoice-info { text-align: right; }
             .invoice-title { font-size: 20px; font-weight: bold; margin-bottom: 5px; }
             .client-section { margin-bottom: 30px; }
             .section-title { font-size: 12px; text-transform: uppercase; color: #666; margin-bottom: 5px; }
             .client-info { font-size: 16px; font-weight: 500; }
-            .description { margin-bottom: 30px; font-style: italic; color: #555; }
+            .description { margin-bottom: 30px; font-style: italic; color: #555; border-left: 3px solid #eee; padding-left: 10px; }
             table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
             th { text-align: left; border-bottom: 1px solid #eee; padding: 10px; color: #666; font-size: 12px; }
             td { padding: 12px 10px; border-bottom: 1px solid #eee; font-size: 14px; }
@@ -94,7 +102,13 @@ const ExportScreen = () => {
         </head>
         <body>
           <div class="header">
-            <div class="business-name">${businessName || "Invoice"}</div>
+            <div>
+              <div class="business-name">${businessName || "Invoice"}</div>
+              <div class="business-info">
+                ${contactInfo ? `<div>${contactInfo}</div>` : ""}
+                ${businessDescription ? `<div>${businessDescription}</div>` : ""}
+              </div>
+            </div>
             <div class="invoice-info">
               <div class="invoice-title">QUOTE</div>
               <div>Date: ${dateStr}</div>
@@ -123,7 +137,7 @@ const ExportScreen = () => {
           <div class="total-box">
             <div class="total-row">
               <span>Total Amount</span>
-              <span>$${selectedQuote.finalQuote.toFixed(2)}</span>
+              <span>${selectedQuote.currencySymbol}${selectedQuote.finalQuote.toFixed(2)}</span>
             </div>
           </div>
 
@@ -151,19 +165,17 @@ const ExportScreen = () => {
       const { uri: tempUri } = await Print.printToFileAsync({ html });
       
       if (Platform.OS === 'android') {
-        // Use New SDK 54 API: Directory.pickDirectoryAsync
         const directory = await Directory.pickDirectoryAsync();
         if (directory) {
           const tempFile = new File(tempUri);
           const base64Content = await tempFile.base64();
           
           const newFile = directory.createFile(`Invoice_${Date.now()}.pdf`, 'application/pdf');
-          newFile.write(base64Content, { encoding: 'base64' });
+          await newFile.write(base64Content, { encoding: 'base64' });
           
           Alert.alert("Success", "Invoice saved to the selected folder.");
         }
       } else {
-        // iOS: Share sheet also doubles as save to files
         await Sharing.shareAsync(tempUri);
       }
     } catch (error) {
@@ -306,7 +318,7 @@ const ExportScreen = () => {
               <TouchableOpacity style={styles.quoteCard} onPress={() => setSelectedQuote(item)}>
                 <View style={styles.quoteCardHeader}>
                   <Text style={styles.materialName}>{item.materialName}</Text>
-                  <Text style={styles.quotePrice}>${item.finalQuote.toFixed(2)}</Text>
+                  <Text style={styles.quotePrice}>{item.currencySymbol}{item.finalQuote.toFixed(2)}</Text>
                 </View>
                 <View style={styles.quoteCardFooter}>
                   <Text style={styles.quoteDate}>

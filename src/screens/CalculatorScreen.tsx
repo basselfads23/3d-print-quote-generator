@@ -18,6 +18,9 @@ const CalculatorScreen = () => {
     printerWattage,
     profitMargin,
     wearAndTearFee,
+    taxRate,
+    currencySymbol,
+    weightUnit,
     addMaterial,
     addQuoteToHistory,
   } = useStore();
@@ -31,7 +34,6 @@ const CalculatorScreen = () => {
   const [isAddingMaterial, setIsAddingMaterial] = useState(false);
   const [newName, setNewName] = useState("");
   const [newPrice, setNewPrice] = useState("");
-  const [newUnit, setNewUnit] = useState("kg");
 
   const selectedMaterial = materials.find((m) => m.id === selectedMaterialId);
 
@@ -58,17 +60,20 @@ const CalculatorScreen = () => {
     const wearAndTearCost = wearAndTearFee * hours;
 
     const baseCost = materialCost + electricityCost + wearAndTearCost;
-    const finalQuote = baseCost * (1 + profitMargin / 100);
+    const subtotal = baseCost * (1 + profitMargin / 100);
+    const taxAmount = subtotal * (taxRate / 100);
+    const finalQuote = subtotal + taxAmount;
 
     addQuoteToHistory({
       materialName: selectedMaterial.name,
       printTime: hours,
       modelWeight: weight,
-      unit: selectedMaterial.unit,
+      unit: weightUnit,
       materialCost,
       electricityCost,
       wearAndTearCost,
       baseCost,
+      taxAmount,
       finalQuote,
     });
 
@@ -84,7 +89,6 @@ const CalculatorScreen = () => {
       addMaterial({
         name: newName,
         price: parseFloat(newPrice),
-        unit: newUnit,
       });
       setSelectedMaterialId(id); // Select it immediately
       setIsAddingMaterial(false);
@@ -111,7 +115,7 @@ const CalculatorScreen = () => {
                 {m.name}
               </Text>
               <Text style={[styles.materialCardSub, selectedMaterialId === m.id && styles.materialCardTextActive]}>
-                ${m.price}/{m.unit}
+                {currencySymbol}{m.price}/{weightUnit}
               </Text>
             </TouchableOpacity>
           ))}
@@ -126,19 +130,15 @@ const CalculatorScreen = () => {
         {isAddingMaterial && (
           <View style={styles.quickAddForm}>
             <TextInput style={styles.input} placeholder="Material Name" value={newName} onChangeText={setNewName} />
-            <View style={styles.row}>
-              <TextInput style={[styles.input, { flex: 2, marginRight: 8 }]} placeholder="Price ($)" value={newPrice} onChangeText={setNewPrice} keyboardType="numeric" />
-              <View style={styles.unitSelector}>
-                {["g", "kg", "lb"].map((u) => (
-                  <TouchableOpacity
-                    key={u}
-                    onPress={() => setNewUnit(u)}
-                    style={[styles.unitButton, newUnit === u && styles.unitButtonActive]}
-                  >
-                    <Text style={[styles.unitButtonText, newUnit === u && styles.unitButtonTextActive]}>{u}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+            <View style={[styles.row, { marginTop: 8, alignItems: 'center' }]}>
+              <TextInput 
+                style={[styles.input, { flex: 1, marginRight: 8 }]} 
+                placeholder={`Price (${currencySymbol})`} 
+                value={newPrice} 
+                onChangeText={setNewPrice} 
+                keyboardType="numeric" 
+              />
+              <Text style={styles.unitLabel}>per {weightUnit}</Text>
             </View>
             <TouchableOpacity style={styles.buttonSmall} onPress={handleQuickAdd}>
               <Text style={styles.buttonText}>Quick Add & Select</Text>
@@ -161,7 +161,7 @@ const CalculatorScreen = () => {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Model Weight ({selectedMaterial ? selectedMaterial.unit : "Unit"})</Text>
+            <Text style={styles.label}>Model Weight ({weightUnit})</Text>
             <TextInput
               style={styles.input}
               placeholder="e.g. 0.5"
@@ -215,12 +215,8 @@ const styles = StyleSheet.create({
   inputGroup: { marginBottom: 16 },
   label: { fontSize: 14, color: "#444", marginBottom: 6 },
   input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 4, padding: 12, fontSize: 16, backgroundColor: "#fff" },
+  unitLabel: { fontSize: 16, color: "#666" },
   row: { flexDirection: "row", marginBottom: 8 },
-  unitSelector: { flexDirection: "row", flex: 1.5, borderWidth: 1, borderColor: "#ccc", borderRadius: 4, overflow: "hidden" },
-  unitButton: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#fff" },
-  unitButtonActive: { backgroundColor: "#007AFF" },
-  unitButtonText: { fontSize: 14, color: "#666" },
-  unitButtonTextActive: { color: "#fff", fontWeight: "bold" },
   buttonSmall: { backgroundColor: "#28a745", padding: 12, borderRadius: 6, alignItems: "center" },
   buttonText: { color: "#fff", fontWeight: "bold" },
   calculateButton: { backgroundColor: "#007AFF", padding: 18, borderRadius: 8, alignItems: "center", marginTop: 20 },
