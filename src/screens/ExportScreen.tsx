@@ -9,9 +9,12 @@ import {
   SafeAreaView,
   FlatList,
   Platform,
+  Modal,
 } from "react-native";
+import { WebView } from "react-native-webview";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
+import * as FileSystem from "expo-file-system";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useStore, QuoteRecord } from "../store/useStore";
 
@@ -33,6 +36,9 @@ const ExportScreen = () => {
   const [showPicker, setShowPicker] = useState(false);
   
   const [isDetailed, setIsDetailed] = useState(true);
+  
+  // Preview State
+  const [isPreviewVisible, setIsPreviewVisible] = useState(false);
 
   useEffect(() => {
     clearOldQuotes();
@@ -66,22 +72,22 @@ const ExportScreen = () => {
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
           <style>
-            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; }
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 20px; color: #333; }
             .header { border-bottom: 2px solid #007AFF; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
-            .business-name { font-size: 28px; font-weight: bold; color: #007AFF; }
+            .business-name { font-size: 24px; font-weight: bold; color: #007AFF; }
             .invoice-info { text-align: right; }
-            .invoice-title { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
-            .client-section { margin-bottom: 40px; }
-            .section-title { font-size: 14px; text-transform: uppercase; color: #666; margin-bottom: 5px; }
-            .client-info { font-size: 18px; font-weight: 500; }
-            .description { margin-bottom: 40px; font-style: italic; color: #555; }
+            .invoice-title { font-size: 20px; font-weight: bold; margin-bottom: 5px; }
+            .client-section { margin-bottom: 30px; }
+            .section-title { font-size: 12px; text-transform: uppercase; color: #666; margin-bottom: 5px; }
+            .client-info { font-size: 16px; font-weight: 500; }
+            .description { margin-bottom: 30px; font-style: italic; color: #555; }
             table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-            th { text-align: left; border-bottom: 1px solid #eee; padding: 10px; color: #666; }
-            td { padding: 15px 10px; border-bottom: 1px solid #eee; }
+            th { text-align: left; border-bottom: 1px solid #eee; padding: 10px; color: #666; font-size: 12px; }
+            td { padding: 12px 10px; border-bottom: 1px solid #eee; font-size: 14px; }
             .amount { text-align: right; font-weight: 500; }
-            .total-box { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-left: auto; width: 50%; border: 1px solid #e9ecef; }
-            .total-row { display: flex; justify-content: space-between; font-size: 20px; font-weight: bold; color: #007AFF; }
-            .footer { margin-top: 50px; text-align: center; color: #999; font-size: 12px; }
+            .total-box { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-left: auto; width: 60%; border: 1px solid #e9ecef; }
+            .total-row { display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; color: #007AFF; }
+            .footer { margin-top: 40px; text-align: center; color: #999; font-size: 10px; }
           </style>
         </head>
         <body>
@@ -127,15 +133,41 @@ const ExportScreen = () => {
     `;
   };
 
-  const handlePreview = async () => {
-    const html = generateHTML();
-    await Print.printAsync({ html });
+  const handleShare = async () => {
+    try {
+      const html = generateHTML();
+      const { uri } = await Print.printToFileAsync({ html });
+      await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+    } catch (error) {
+      console.error("Error sharing:", error);
+    }
   };
 
-  const handleExport = async () => {
-    const html = generateHTML();
-    const { uri } = await Print.printToFileAsync({ html });
-    await Sharing.shareAsync(uri);
+  const handleDownload = async () => {
+    try {
+      const html = generateHTML();
+      const { uri } = await Print.printToFileAsync({ html });
+      
+      if (Platform.OS === 'android') {
+        const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+        if (permissions.granted) {
+          const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+          const newUri = await FileSystem.StorageAccessFramework.createFileAsync(
+            permissions.directoryUri,
+            `Invoice_${Date.now()}.pdf`,
+            'application/pdf'
+          );
+          await FileSystem.writeAsStringAsync(newUri, base64, { encoding: FileSystem.EncodingType.Base64 });
+          Alert.alert("Success", "Invoice saved to the selected folder.");
+        }
+      } else {
+        // iOS: Share sheet also doubles as save to files
+        await Sharing.shareAsync(uri);
+      }
+    } catch (error) {
+      console.error("Error downloading:", error);
+      Alert.alert("Error", "Could not save the file.");
+    }
   };
 
   if (selectedQuote) {
@@ -219,14 +251,35 @@ const ExportScreen = () => {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.previewBtn} onPress={handlePreview}>
+          <TouchableOpacity style={styles.previewBtn} onPress={() => setIsPreviewVisible(true)}>
             <Text style={styles.previewBtnText}>Preview PDF</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.exportBtn} onPress={handleExport}>
-            <Text style={styles.exportBtnText}>Export & Save PDF</Text>
-          </TouchableOpacity>
+          <View style={styles.actionRow}>
+            <TouchableOpacity style={[styles.exportBtn, { flex: 1, marginRight: 6 }]} onPress={handleShare}>
+              <Text style={styles.exportBtnText}>Share</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.exportBtn, { flex: 1, marginLeft: 6, backgroundColor: "#007AFF" }]} onPress={handleDownload}>
+              <Text style={styles.exportBtnText}>Download</Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
+
+        <Modal visible={isPreviewVisible} animationType="slide">
+          <SafeAreaView style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Invoice Preview</Text>
+              <TouchableOpacity onPress={() => setIsPreviewVisible(false)} style={styles.closeBtn}>
+                <Text style={styles.closeBtnText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+            <WebView 
+              originWhitelist={['*']}
+              source={{ html: generateHTML() }} 
+              style={styles.webview} 
+            />
+          </SafeAreaView>
+        </Modal>
       </SafeAreaView>
     );
   }
@@ -307,8 +360,17 @@ const styles = StyleSheet.create({
   toggleBtnTextActive: { color: "#fff" },
   previewBtn: { backgroundColor: "#6c757d", padding: 18, borderRadius: 8, alignItems: "center", marginBottom: 12 },
   previewBtnText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  actionRow: { flexDirection: "row", justifyContent: "space-between" },
   exportBtn: { backgroundColor: "#28a745", padding: 18, borderRadius: 8, alignItems: "center" },
   exportBtnText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+
+  /* Modal Styles */
+  modalContainer: { flex: 1, backgroundColor: "#fff" },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "#eee" },
+  modalTitle: { fontSize: 18, fontWeight: "bold" },
+  closeBtn: { backgroundColor: "#FF3B30", paddingVertical: 8, paddingHorizontal: 16, borderRadius: 6 },
+  closeBtnText: { color: "#fff", fontWeight: "bold" },
+  webview: { flex: 1 },
 });
 
 export default ExportScreen;
