@@ -127,7 +127,20 @@ const SettingsScreen = () => {
     } else if (step === 2) {
       if (!tmpCurrency || !tmpUnit || !tmpFont) return false;
     } else if (step === 3) {
-      if (!tmpRate || !tmpWattage || !tmpMargin || !tmpFee) return false;
+      if (!tmpRate || !tmpWattage || !tmpMargin || !tmpFee) {
+        Alert.alert("Required", "Missing fields.");
+        return false;
+      }
+      if (
+        isNaN(parseFloat(tmpRate)) || parseFloat(tmpRate) < 0 ||
+        isNaN(parseFloat(tmpWattage)) || parseFloat(tmpWattage) < 0 ||
+        isNaN(parseFloat(tmpMargin)) || parseFloat(tmpMargin) < 0 ||
+        isNaN(parseFloat(tmpFee)) || parseFloat(tmpFee) < 0 ||
+        (tmpTax && (isNaN(parseFloat(tmpTax)) || parseFloat(tmpTax) < 0))
+      ) {
+        Alert.alert("Error", "All variables must be valid positive numbers.");
+        return false;
+      }
     }
     return true;
   };
@@ -186,6 +199,16 @@ const SettingsScreen = () => {
   const handleSaveVars = () => {
     if (!tmpRate || !tmpWattage || !tmpMargin || !tmpFee) {
       Alert.alert("Required", "Missing fields.");
+      return;
+    }
+    if (
+      isNaN(parseFloat(tmpRate)) || parseFloat(tmpRate) < 0 ||
+      isNaN(parseFloat(tmpWattage)) || parseFloat(tmpWattage) < 0 ||
+      isNaN(parseFloat(tmpMargin)) || parseFloat(tmpMargin) < 0 ||
+      isNaN(parseFloat(tmpFee)) || parseFloat(tmpFee) < 0 ||
+      (tmpTax && (isNaN(parseFloat(tmpTax)) || parseFloat(tmpTax) < 0))
+    ) {
+      Alert.alert("Error", "All variables must be valid positive numbers.");
       return;
     }
     setElectricityRate(parseFloat(tmpRate) || 0);

@@ -86,6 +86,11 @@ const CalculatorScreen = () => {
     const hours = parseFloat(printHours);
     const weight = parseFloat(modelWeight);
 
+    if (isNaN(hours) || isNaN(weight) || hours < 0 || weight < 0) {
+      Alert.alert("Error", "Please enter valid numbers for time and weight.");
+      return;
+    }
+
     const pricePerBaseUnit =
       weightUnit === "g"
         ? selectedMaterial.price / 1000
@@ -122,8 +127,13 @@ const CalculatorScreen = () => {
 
   const handleQuickAdd = () => {
     if (newName && newPrice) {
+      const price = parseFloat(newPrice);
+      if (isNaN(price) || price < 0) {
+        Alert.alert("Error", "Please enter a valid positive price.");
+        return;
+      }
       const id = Date.now().toString();
-      addMaterial({ name: newName, price: parseFloat(newPrice) });
+      addMaterial({ name: newName, price });
       setSelectedMaterialId(id);
       setIsAddingMaterial(false);
       setNewName("");

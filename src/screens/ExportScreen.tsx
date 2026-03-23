@@ -166,81 +166,136 @@ const ExportScreen = () => {
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
           <style>
-            body { font-family: ${fontStack}; padding: 20px; color: #333; }
-            .header { border-bottom: 2px solid #007AFF; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-start; }
-            .business-name { font-size: 24px; font-weight: bold; color: #007AFF; }
-            .business-info { font-size: 12px; color: #666; margin-top: 5px; }
-            .invoice-info { text-align: right; }
-            .invoice-title { font-size: 20px; font-weight: bold; margin-bottom: 5px; }
-            .client-section { margin-bottom: 30px; }
-            .section-title { font-size: 12px; text-transform: uppercase; color: #666; margin-bottom: 5px; }
-            .client-info { font-size: 16px; font-weight: 500; }
-            .description { margin-bottom: 30px; font-style: italic; color: #555; border-left: 3px solid #eee; padding-left: 10px; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-            th { text-align: left; border-bottom: 1px solid #eee; padding: 10px; color: #666; font-size: 12px; }
-            td { padding: 12px 10px; border-bottom: 1px solid #eee; font-size: 14px; }
-            .amount { text-align: right; font-weight: 500; }
-            .total-box { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-left: auto; width: 60%; border: 1px solid #e9ecef; }
-            .total-row { display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; color: #007AFF; }
-            .footer { margin-top: 40px; text-align: center; color: #999; font-size: 10px; }
+            body { font-family: ${fontStack}; padding: 40px; color: #000; line-height: 1.2; }
+            .invoice-title { font-size: 48px; font-weight: 900; letter-spacing: -2px; margin-bottom: 30px; }
+            
+            .meta-section { display: flex; justify-content: space-between; margin-bottom: 30px; align-items: flex-start; }
+            .biz-details { flex: 1; }
+            .biz-name { font-size: 16px; font-weight: 800; margin-bottom: 4px; text-transform: uppercase; }
+            .biz-text { font-size: 12px; color: #444; margin-bottom: 2px; }
+            
+            .date-block { text-align: right; }
+            .label-sm { font-size: 11px; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 4px; letter-spacing: 0.5px; }
+            .value-md { font-size: 14px; font-weight: 600; margin-bottom: 20px; }
+
+            .client-section { margin-bottom: 40px; display: flex; justify-content: space-between; align-items: flex-start; }
+            .client-details { flex: 1; }
+            
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th { text-align: left; border-bottom: 2px solid #000; padding: 12px 5px; font-size: 12px; font-weight: 900; text-transform: uppercase; }
+            td { padding: 15px 5px; border-bottom: 1px solid #EEE; font-size: 14px; }
+            .col-qty { text-align: center; width: 80px; }
+            .col-price { text-align: right; width: 100px; font-weight: 600; }
+            
+            .summary-section { margin-top: 30px; margin-left: auto; width: 45%; }
+            .summary-row { display: flex; justify-content: space-between; padding: 8px 5px; font-size: 14px; }
+            .summary-row.total { 
+              margin-top: 15px;
+              padding: 15px 5px; 
+              border-top: 2px solid #000; 
+              border-bottom: 4px double #000; 
+              font-size: 20px; 
+              font-weight: 900; 
+              text-transform: uppercase;
+            }
+            
+            .footer { margin-top: 80px; text-align: center; font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; }
+            .notes { margin-top: 40px; font-size: 12px; color: #333; border-top: 1px solid #EEE; padding-top: 20px; }
+            .notes-label { font-weight: 800; margin-bottom: 6px; text-transform: uppercase; font-size: 10px; color: #666; }
           </style>
         </head>
         <body>
-          <div class="header">
-            <div>
-              ${showBusinessName ? `<div class="business-name">${businessName || "Invoice"}</div>` : ""}
-              <div class="business-info">
-                ${showBusinessEmail && businessEmail ? `<div>${businessEmail}</div>` : ""}
-                ${showBusinessPhone && businessPhone ? `<div>${businessPhone}</div>` : ""}
-                ${showBusinessDesc && businessDescription ? `<div>${businessDescription}</div>` : ""}
-              </div>
+          <div class="invoice-title">INVOICE</div>
+          
+          <div class="meta-section">
+            <div class="biz-details">
+              ${showBusinessName && businessName ? `<div class="biz-name">${businessName}</div>` : ""}
+              ${showBusinessDesc && businessDescription ? `<div class="biz-text">${businessDescription}</div>` : ""}
+              ${showBusinessEmail && businessEmail ? `<div class="biz-text">${businessEmail}</div>` : ""}
+              ${showBusinessPhone && businessPhone ? `<div class="biz-text">${businessPhone}</div>` : ""}
             </div>
-            <div class="invoice-info">
-              <div class="invoice-title">QUOTE</div>
-              <div>Date: ${dateStr}</div>
+            <div class="date-block">
+              <div class="label-sm">Date</div>
+              <div class="value-md">${dateStr}</div>
             </div>
           </div>
 
           <div class="client-section">
-            <div class="section-title">Prepared For</div>
-            <div class="client-info">${clientName || "Valued Client"}</div>
+            <div class="client-details">
+              <div class="label-sm">Prepared For</div>
+              <div class="value-md">${clientName || "Valued Customer"}</div>
+            </div>
+            <div class="date-block">
+               <div class="label-sm">Due Date</div>
+               <div class="value-md">${dateStr}</div>
+            </div>
           </div>
-
-          ${description ? `<div class="description">${description}</div>` : ""}
 
           <table>
             <thead>
               <tr>
-                <th>Description</th>
-                <th class="amount">Total</th>
+                <th>Item Description</th>
+                <th class="col-qty">Qty</th>
+                <th class="col-price">Price</th>
               </tr>
             </thead>
             <tbody>
               ${
                 isDetailed
                   ? `
-                <tr><td>Material Cost (${activeQuote.materialName})</td><td class="amount">${activeQuote.currencySymbol}${activeQuote.materialCost.toFixed(2)}</td></tr>
-                <tr><td>Electricity Cost</td><td class="amount">${activeQuote.currencySymbol}${activeQuote.electricityCost.toFixed(2)}</td></tr>
-                <tr><td>Wear & Tear Fee</td><td class="amount">${activeQuote.currencySymbol}${activeQuote.wearAndTearCost.toFixed(2)}</td></tr>
-                <tr><td>Profit Margin (${profitMargin}%)</td><td class="amount">${activeQuote.currencySymbol}${marginAmount.toFixed(2)}</td></tr>
-                ${activeQuote.taxAmount > 0 ? `<tr><td>Tax (${taxRate}%)</td><td class="amount">${activeQuote.currencySymbol}${activeQuote.taxAmount.toFixed(2)}</td></tr>` : ""}
+                <tr>
+                  <td>Filament (${activeQuote.materialName})</td>
+                  <td class="col-qty">${activeQuote.modelWeight}${activeQuote.unit}</td>
+                  <td class="col-price">${activeQuote.currencySymbol}${activeQuote.materialCost.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td>Printer Operating Time</td>
+                  <td class="col-qty">${activeQuote.printTime}h</td>
+                  <td class="col-price">${activeQuote.currencySymbol}${activeQuote.electricityCost.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td>Equipment Wear & Tear</td>
+                  <td class="col-qty">1</td>
+                  <td class="col-price">${activeQuote.currencySymbol}${activeQuote.wearAndTearCost.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td>Service Profit Margin (${profitMargin}%)</td>
+                  <td class="col-qty">1</td>
+                  <td class="col-price">${activeQuote.currencySymbol}${marginAmount.toFixed(2)}</td>
+                </tr>
               `
                   : `
-                <tr><td>Custom 3D Print - ${activeQuote.materialName}</td><td class="amount">${activeQuote.currencySymbol}${activeQuote.finalQuote.toFixed(2)}</td></tr>
+                <tr>
+                  <td>Custom 3D Print Job (${activeQuote.materialName})</td>
+                  <td class="col-qty">1</td>
+                  <td class="col-price">${activeQuote.currencySymbol}${(activeQuote.finalQuote - activeQuote.taxAmount).toFixed(2)}</td>
+                </tr>
               `
               }
             </tbody>
           </table>
 
-          <div class="total-box">
-            <div class="total-row">
-              <span>Total Amount</span>
+          <div class="summary-section">
+            <div class="summary-row">
+              <span>Subtotal</span>
+              <span>${activeQuote.currencySymbol}${(activeQuote.finalQuote - activeQuote.taxAmount).toFixed(2)}</span>
+            </div>
+            ${activeQuote.taxAmount > 0 ? `
+            <div class="summary-row">
+              <span>Tax (${taxRate}%)</span>
+              <span>${activeQuote.currencySymbol}${activeQuote.taxAmount.toFixed(2)}</span>
+            </div>
+            ` : ""}
+            <div class="summary-row total">
+              <span>Total</span>
               <span>${activeQuote.currencySymbol}${activeQuote.finalQuote.toFixed(2)}</span>
             </div>
           </div>
 
+          ${description ? `<div class="notes"><div class="notes-label">Additional Details</div>${description}</div>` : ""}
+
           <div class="footer">
-            Generated by 3D Print Quote Generator
+            Generated by 3D QUOTE PRO
           </div>
         </body>
       </html>
@@ -250,7 +305,11 @@ const ExportScreen = () => {
   const handleShare = async () => {
     try {
       const html = generateHTML();
-      const { uri } = await Print.printToFileAsync({ html });
+      const { uri } = await Print.printToFileAsync({ 
+        html,
+        width: 595,
+        height: 842 
+      });
       await Sharing.shareAsync(uri, {
         UTI: ".pdf",
         mimeType: "application/pdf",

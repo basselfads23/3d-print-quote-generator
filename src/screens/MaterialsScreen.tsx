@@ -67,7 +67,12 @@ const MaterialsScreen = () => {
 
   const handleAddMaterial = () => {
     if (name && price) {
-      addMaterial({ name, price: parseFloat(price) });
+      const parsedPrice = parseFloat(price);
+      if (isNaN(parsedPrice) || parsedPrice < 0) {
+        Alert.alert("Error", "Please enter a valid positive price.");
+        return;
+      }
+      addMaterial({ name, price: parsedPrice });
       setName("");
       setPrice("");
     }
@@ -81,9 +86,14 @@ const MaterialsScreen = () => {
 
   const saveEditedMaterial = () => {
     if (editingId && editName && editPrice) {
+      const parsedPrice = parseFloat(editPrice);
+      if (isNaN(parsedPrice) || parsedPrice < 0) {
+        Alert.alert("Error", "Please enter a valid positive price.");
+        return;
+      }
       updateMaterial(editingId, {
         name: editName,
-        price: parseFloat(editPrice),
+        price: parsedPrice,
       });
       setEditingId(null);
     }
