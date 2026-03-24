@@ -349,6 +349,7 @@ const MaterialsScreen = () => {
               ))
             )}
           </View>
+          <View style={{ height: 300 }} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

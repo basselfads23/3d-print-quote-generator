@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { useTheme } from "../theme";
 
 const SettingsScreen = () => {
   const theme = useTheme();
+  const scrollViewRef = useRef<ScrollView>(null);
   const {
     isSetupComplete,
     completeSetup,
@@ -67,19 +68,22 @@ const SettingsScreen = () => {
   const [tmpTax, setTmpTax] = useState(taxRate.toString());
 
   useEffect(() => {
-    setTmpName(businessName);
-    setTmpEmail(businessEmail);
-    setTmpPhone(businessPhone);
-    setTmpDesc(businessDescription);
-    setTmpCurrency(currencySymbol);
-    setTmpUnit(weightUnit);
-    setTmpFont(pdfFont);
-    setTmpRate(electricityRate.toString());
-    setTmpWattage(printerWattage.toString());
-    setTmpMargin(profitMargin.toString());
-    setTmpFee(wearAndTearFee.toString());
-    setTmpTax(taxRate.toString());
-    if (!isSetupComplete) setCurrentStep(1);
+    if (isSetupComplete) {
+      setTmpName(businessName);
+      setTmpEmail(businessEmail);
+      setTmpPhone(businessPhone);
+      setTmpDesc(businessDescription);
+      setTmpCurrency(currencySymbol);
+      setTmpUnit(weightUnit);
+      setTmpFont(pdfFont);
+      setTmpRate(electricityRate.toString());
+      setTmpWattage(printerWattage.toString());
+      setTmpMargin(profitMargin.toString());
+      setTmpFee(wearAndTearFee.toString());
+      setTmpTax(taxRate.toString());
+    } else {
+      setCurrentStep(1);
+    }
   }, [
     isSetupComplete,
     businessName,
@@ -147,6 +151,10 @@ const SettingsScreen = () => {
     return true;
   };
 
+  const scrollToTop = () => {
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+  };
+
   const handleNext = () => {
     if (validateStep(currentStep)) {
       if (currentStep === 1) {
@@ -155,11 +163,13 @@ const SettingsScreen = () => {
         setBusinessPhone(tmpPhone);
         setBusinessDescription(tmpDesc);
         setCurrentStep(2);
+        scrollToTop();
       } else if (currentStep === 2) {
         setCurrencySymbol(tmpCurrency);
         setWeightUnit(tmpUnit);
         setPdfFont(tmpFont);
         setCurrentStep(3);
+        scrollToTop();
       }
     }
   };
@@ -245,6 +255,7 @@ const SettingsScreen = () => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}>
         <ScrollView
+          ref={scrollViewRef}
           contentContainerStyle={styles.container}
           keyboardShouldPersistTaps="handled">
           {!isSetupComplete ? (
@@ -480,7 +491,10 @@ const SettingsScreen = () => {
                           backgroundColor: theme.border,
                         },
                       ]}
-                      onPress={() => setCurrentStep(1)}>
+                      onPress={() => {
+                        setCurrentStep(1);
+                        scrollToTop();
+                      }}>
                       <Text
                         style={[styles.cancelBtnText, { color: theme.text }]}>
                         BACK
@@ -645,7 +659,10 @@ const SettingsScreen = () => {
                           backgroundColor: theme.border,
                         },
                       ]}
-                      onPress={() => setCurrentStep(2)}>
+                      onPress={() => {
+                        setCurrentStep(2);
+                        scrollToTop();
+                      }}>
                       <Text
                         style={[styles.cancelBtnText, { color: theme.text }]}>
                         BACK
@@ -1172,6 +1189,8 @@ const SettingsScreen = () => {
               </View>
             </>
           )}
+          {/* Spacer to allow scrolling past the keyboard */}
+          <View style={{ height: 300 }} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

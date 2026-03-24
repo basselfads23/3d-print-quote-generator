@@ -11,6 +11,7 @@ import {
   Modal,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
@@ -166,29 +167,29 @@ const ExportScreen = () => {
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
           <style>
-            body { font-family: ${fontStack}; padding: 40px; color: #000; line-height: 1.2; }
-            .invoice-title { font-size: 48px; font-weight: 900; letter-spacing: -2px; margin-bottom: 30px; }
+            body { font-family: ${fontStack}; padding: 40px; color: #000; line-height: 1.2; background-color: #fff; }
+            .invoice-title { font-size: 48px; font-weight: 900; letter-spacing: -2px; margin-bottom: 30px; color: #000; }
             
             .meta-section { display: flex; justify-content: space-between; margin-bottom: 30px; align-items: flex-start; }
             .biz-details { flex: 1; }
-            .biz-name { font-size: 16px; font-weight: 800; margin-bottom: 4px; text-transform: uppercase; }
+            .biz-name { font-size: 16px; font-weight: 800; margin-bottom: 4px; text-transform: uppercase; color: #000; }
             .biz-text { font-size: 12px; color: #444; margin-bottom: 2px; }
             
             .date-block { text-align: right; }
             .label-sm { font-size: 11px; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 4px; letter-spacing: 0.5px; }
-            .value-md { font-size: 14px; font-weight: 600; margin-bottom: 20px; }
+            .value-md { font-size: 14px; font-weight: 600; margin-bottom: 20px; color: #000; }
 
             .client-section { margin-bottom: 40px; display: flex; justify-content: space-between; align-items: flex-start; }
             .client-details { flex: 1; }
             
             table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th { text-align: left; border-bottom: 2px solid #000; padding: 12px 5px; font-size: 12px; font-weight: 900; text-transform: uppercase; }
-            td { padding: 15px 5px; border-bottom: 1px solid #EEE; font-size: 14px; }
+            th { text-align: left; border-bottom: 2px solid #000; padding: 12px 5px; font-size: 12px; font-weight: 900; text-transform: uppercase; color: #000; }
+            td { padding: 15px 5px; border-bottom: 1px solid #EEE; font-size: 14px; color: #000; }
             .col-qty { text-align: center; width: 80px; }
             .col-price { text-align: right; width: 100px; font-weight: 600; }
             
             .summary-section { margin-top: 30px; margin-left: auto; width: 45%; }
-            .summary-row { display: flex; justify-content: space-between; padding: 8px 5px; font-size: 14px; }
+            .summary-row { display: flex; justify-content: space-between; padding: 8px 5px; font-size: 14px; color: #000; }
             .summary-row.total { 
               margin-top: 15px;
               padding: 15px 5px; 
@@ -197,6 +198,7 @@ const ExportScreen = () => {
               font-size: 20px; 
               font-weight: 900; 
               text-transform: uppercase;
+              color: #000;
             }
             
             .footer { margin-top: 80px; text-align: center; font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; }
@@ -387,343 +389,360 @@ const ExportScreen = () => {
       <SafeAreaView
         style={[styles.safeArea, { backgroundColor: theme.background }]}
         edges={[]}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <TouchableOpacity
-            onPress={handleBackToList}
-            style={styles.backButton}>
-            <Text style={[styles.backButtonText, { color: theme.primary }]}>
-              ← BACK TO HISTORY
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled">
+            <TouchableOpacity
+              onPress={handleBackToList}
+              style={styles.backButton}>
+              <Text style={[styles.backButtonText, { color: theme.primary }]}>
+                ← BACK TO HISTORY
+              </Text>
+            </TouchableOpacity>
+
+            <Text style={[styles.header, { color: theme.text }]}>
+              INVOICE SETUP
             </Text>
-          </TouchableOpacity>
 
-          <Text style={[styles.header, { color: theme.text }]}>
-            INVOICE SETUP
-          </Text>
+            <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+              1. BUSINESS DETAILS
+            </Text>
+            <Text
+              style={[
+                styles.helperText,
+                { color: theme.textSecondary, marginBottom: 12 },
+              ]}>
+              Toggle display on invoice.
+            </Text>
+            <div style={styles.toggleGrid}>
+              <ToggleItem
+                label="Name"
+                value={showBusinessName}
+                onToggle={setShowBusinessName}
+              />
+              {businessEmail ? (
+                <ToggleItem
+                  label="Email"
+                  value={showBusinessEmail}
+                  onToggle={setShowBusinessEmail}
+                />
+              ) : (
+                <AddLink label="Email" />
+              )}
+              {businessPhone ? (
+                <ToggleItem
+                  label="Phone"
+                  value={showBusinessPhone}
+                  onToggle={setShowBusinessPhone}
+                />
+              ) : (
+                <AddLink label="Phone" />
+              )}
+              {businessDescription ? (
+                <ToggleItem
+                  label="Description"
+                  value={showBusinessDesc}
+                  onToggle={setShowBusinessDesc}
+                />
+              ) : (
+                <AddLink label="Description" />
+              )}
+            </div>
 
-          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-            1. BUSINESS DETAILS
-          </Text>
-          <Text
-            style={[
-              styles.helperText,
-              { color: theme.textSecondary, marginBottom: 12 },
-            ]}>
-            Toggle display on invoice.
-          </Text>
-          <View style={styles.toggleGrid}>
-            <ToggleItem
-              label="Name"
-              value={showBusinessName}
-              onToggle={setShowBusinessName}
-            />
-            {businessEmail ? (
-              <ToggleItem
-                label="Email"
-                value={showBusinessEmail}
-                onToggle={setShowBusinessEmail}
-              />
-            ) : (
-              <AddLink label="Email" />
-            )}
-            {businessPhone ? (
-              <ToggleItem
-                label="Phone"
-                value={showBusinessPhone}
-                onToggle={setShowBusinessPhone}
-              />
-            ) : (
-              <AddLink label="Phone" />
-            )}
-            {businessDescription ? (
-              <ToggleItem
-                label="Description"
-                value={showBusinessDesc}
-                onToggle={setShowBusinessDesc}
-              />
-            ) : (
-              <AddLink label="Description" />
-            )}
-          </View>
-
-          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-            2. CLIENT DETAILS
-          </Text>
-          <View
-            style={[
-              styles.section,
-              { backgroundColor: theme.surface, borderColor: theme.border },
-            ]}>
-            {isEditingClient ? (
-              <>
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.label, { color: theme.text }]}>
-                    Client Name
-                  </Text>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      {
-                        color: theme.text,
-                        borderColor: theme.border,
-                        backgroundColor: theme.background,
-                      },
-                    ]}
-                    value={tmpClientName}
-                    onChangeText={setTmpClientName}
-                  />
-                </View>
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.label, { color: theme.text }]}>
-                    Description
-                  </Text>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      {
-                        color: theme.text,
-                        borderColor: theme.border,
-                        backgroundColor: theme.background,
-                        height: 80,
-                      },
-                    ]}
-                    value={tmpDescription}
-                    onChangeText={setTmpDescription}
-                    multiline
-                  />
-                </View>
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.label, { color: theme.text }]}>
-                    Invoice Date *
-                  </Text>
-                  <TouchableOpacity
-                    style={[
-                      styles.dateDisplay,
-                      {
-                        borderColor: theme.border,
-                        backgroundColor: theme.background,
-                      },
-                    ]}
-                    onPress={() => setShowPicker(true)}>
-                    <Text
-                      style={[styles.dateDisplayText, { color: theme.text }]}>
-                      {tmpDate.toLocaleDateString()}
+            <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+              2. CLIENT DETAILS
+            </Text>
+            <View
+              style={[
+                styles.section,
+                { backgroundColor: theme.surface, borderColor: theme.border },
+              ]}>
+              {isEditingClient ? (
+                <>
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: theme.text }]}>
+                      Client Name
                     </Text>
-                    <Text
-                      style={[styles.dateChangeText, { color: theme.primary }]}>
-                      CHANGE
-                    </Text>
-                  </TouchableOpacity>
-                  {showPicker && (
-                    <DateTimePicker
-                      value={tmpDate}
-                      mode="date"
-                      display="default"
-                      onChange={onDateChange}
+                    <TextInput
+                      style={[
+                        styles.input,
+                        {
+                          color: theme.text,
+                          borderColor: theme.border,
+                          backgroundColor: theme.background,
+                        },
+                      ]}
+                      value={tmpClientName}
+                      onChangeText={setTmpClientName}
                     />
-                  )}
-                </View>
-                <TouchableOpacity
-                  style={[
-                    styles.saveClientBtn,
-                    { backgroundColor: theme.primary },
-                  ]}
-                  onPress={handleSaveClientDetails}>
-                  <Text
-                    style={[
-                      styles.saveClientBtnText,
-                      { color: theme.background },
-                    ]}>
-                    SAVE CLIENT DETAILS
-                  </Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <View
-                  style={[
-                    styles.displayBox,
-                    { borderBottomColor: theme.border },
-                  ]}>
-                  <Text
-                    style={[
-                      styles.displayLabel,
-                      { color: theme.textSecondary },
-                    ]}>
-                    Client Name
-                  </Text>
-                  <Text style={[styles.displayText, { color: theme.text }]}>
-                    {clientName || "Not provided"}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.displayBox,
-                    { borderBottomColor: theme.border },
-                  ]}>
-                  <Text
-                    style={[
-                      styles.displayLabel,
-                      { color: theme.textSecondary },
-                    ]}>
-                    Description
-                  </Text>
-                  <Text style={[styles.displayText, { color: theme.text }]}>
-                    {description || "Not provided"}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.displayBox,
-                    { borderBottomColor: "transparent" },
-                  ]}>
-                  <Text
-                    style={[
-                      styles.displayLabel,
-                      { color: theme.textSecondary },
-                    ]}>
-                    Date
-                  </Text>
-                  <Text style={[styles.displayText, { color: theme.text }]}>
-                    {date.toLocaleDateString()}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  style={[styles.editClientBtn, { borderColor: theme.primary }]}
-                  onPress={handleEditClientDetails}>
-                  <Text
-                    style={[
-                      styles.editClientBtnText,
-                      { color: theme.primary },
-                    ]}>
-                    EDIT DETAILS
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-
-          {!isEditingClient && (
-            <>
-              <Text
-                style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-                3. INVOICE TYPE
-              </Text>
-              <View style={[styles.toggleRow, { borderColor: theme.primary }]}>
-                <TouchableOpacity
-                  onPress={() => setIsDetailed(true)}
-                  style={[
-                    styles.toggleBtn,
-                    isDetailed && { backgroundColor: theme.primary },
-                  ]}>
-                  <Text
-                    style={[
-                      styles.toggleBtnText,
-                      { color: theme.primary },
-                      isDetailed && { color: theme.background },
-                    ]}>
-                    Detailed
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setIsDetailed(false)}
-                  style={[
-                    styles.toggleBtn,
-                    !isDetailed && { backgroundColor: theme.primary },
-                  ]}>
-                  <Text
-                    style={[
-                      styles.toggleBtnText,
-                      { color: theme.primary },
-                      !isDetailed && { color: theme.background },
-                    ]}>
-                    Simple
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              <Text
-                style={[
-                  styles.helperText,
-                  { color: theme.textSecondary, marginTop: 8 },
-                ]}>
-                {isDetailed
-                  ? "Itemized breakdown of all costs."
-                  : "Simplified single-line quote."}
-              </Text>
-
-              <TouchableOpacity
-                style={[styles.previewBtn, { backgroundColor: theme.border }]}
-                onPress={() => setIsPreviewVisible(true)}>
-                <Text style={[styles.previewBtnText, { color: theme.text }]}>
-                  PREVIEW PDF
-                </Text>
-              </TouchableOpacity>
-
-              {!isGenerated && !isGenerating && (
-                <TouchableOpacity
-                  style={[
-                    styles.generateBtn,
-                    { backgroundColor: theme.primary },
-                  ]}
-                  onPress={handleGenerateInvoice}>
-                  <Text
-                    style={[
-                      styles.generateBtnText,
-                      { color: theme.background },
-                    ]}>
-                    GENERATE INVOICE
-                  </Text>
-                </TouchableOpacity>
-              )}
-
-              {isGenerating && (
-                <View style={styles.loaderContainer}>
-                  <ActivityIndicator size="large" color={theme.primary} />
-                  <Text
-                    style={[styles.loaderText, { color: theme.textSecondary }]}>
-                    Rendering professional invoice...
-                  </Text>
-                </View>
-              )}
-
-              {isGenerated && (
-                <View style={styles.actionRow}>
-                  <TouchableOpacity
-                    style={[
-                      styles.exportBtn,
-                      {
-                        flex: 1,
-                        marginRight: 6,
-                        backgroundColor: theme.success,
-                      },
-                    ]}
-                    onPress={handleShare}>
-                    <Text style={[styles.exportBtnText, { color: "#fff" }]}>
-                      SHARE PDF
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: theme.text }]}>
+                      Description
                     </Text>
-                  </TouchableOpacity>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        {
+                          color: theme.text,
+                          borderColor: theme.border,
+                          backgroundColor: theme.background,
+                          height: 80,
+                        },
+                      ]}
+                      value={tmpDescription}
+                      onChangeText={setTmpDescription}
+                      multiline
+                    />
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: theme.text }]}>
+                      Invoice Date *
+                    </Text>
+                    <TouchableOpacity
+                      style={[
+                        styles.dateDisplay,
+                        {
+                          borderColor: theme.border,
+                          backgroundColor: theme.background,
+                        },
+                      ]}
+                      onPress={() => setShowPicker(true)}>
+                      <Text
+                        style={[styles.dateDisplayText, { color: theme.text }]}>
+                        {tmpDate.toLocaleDateString()}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.dateChangeText,
+                          { color: theme.primary },
+                        ]}>
+                        CHANGE
+                      </Text>
+                    </TouchableOpacity>
+                    {showPicker && (
+                      <DateTimePicker
+                        value={tmpDate}
+                        mode="date"
+                        display="default"
+                        onChange={onDateChange}
+                      />
+                    )}
+                  </View>
                   <TouchableOpacity
                     style={[
-                      styles.exportBtn,
-                      {
-                        flex: 1,
-                        marginLeft: 6,
-                        backgroundColor: theme.primary,
-                      },
+                      styles.saveClientBtn,
+                      { backgroundColor: theme.primary },
                     ]}
-                    onPress={handleDownload}>
+                    onPress={handleSaveClientDetails}>
                     <Text
                       style={[
-                        styles.exportBtnText,
+                        styles.saveClientBtnText,
                         { color: theme.background },
                       ]}>
-                      DOWNLOAD PDF
+                      SAVE CLIENT DETAILS
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <View
+                    style={[
+                      styles.displayBox,
+                      { borderBottomColor: theme.border },
+                    ]}>
+                    <Text
+                      style={[
+                        styles.displayLabel,
+                        { color: theme.textSecondary },
+                      ]}>
+                      Client Name
+                    </Text>
+                    <Text style={[styles.displayText, { color: theme.text }]}>
+                      {clientName || "Not provided"}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.displayBox,
+                      { borderBottomColor: theme.border },
+                    ]}>
+                    <Text
+                      style={[
+                        styles.displayLabel,
+                        { color: theme.textSecondary },
+                      ]}>
+                      Description
+                    </Text>
+                    <Text style={[styles.displayText, { color: theme.text }]}>
+                      {description || "Not provided"}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.displayBox,
+                      { borderBottomColor: "transparent" },
+                    ]}>
+                    <Text
+                      style={[
+                        styles.displayLabel,
+                        { color: theme.textSecondary },
+                      ]}>
+                      Date
+                    </Text>
+                    <Text style={[styles.displayText, { color: theme.text }]}>
+                      {date.toLocaleDateString()}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[
+                      styles.editClientBtn,
+                      { borderColor: theme.primary },
+                    ]}
+                    onPress={handleEditClientDetails}>
+                    <Text
+                      style={[
+                        styles.editClientBtnText,
+                        { color: theme.primary },
+                      ]}>
+                      EDIT DETAILS
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+
+            {!isEditingClient && (
+              <>
+                <Text
+                  style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+                  3. INVOICE TYPE
+                </Text>
+                <View
+                  style={[styles.toggleRow, { borderColor: theme.primary }]}>
+                  <TouchableOpacity
+                    onPress={() => setIsDetailed(true)}
+                    style={[
+                      styles.toggleBtn,
+                      isDetailed && { backgroundColor: theme.primary },
+                    ]}>
+                    <Text
+                      style={[
+                        styles.toggleBtnText,
+                        { color: theme.primary },
+                        isDetailed && { color: theme.background },
+                      ]}>
+                      Detailed
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setIsDetailed(false)}
+                    style={[
+                      styles.toggleBtn,
+                      !isDetailed && { backgroundColor: theme.primary },
+                    ]}>
+                    <Text
+                      style={[
+                        styles.toggleBtnText,
+                        { color: theme.primary },
+                        !isDetailed && { color: theme.background },
+                      ]}>
+                      Simple
                     </Text>
                   </TouchableOpacity>
                 </View>
-              )}
-            </>
-          )}
-        </ScrollView>
+                <Text
+                  style={[
+                    styles.helperText,
+                    { color: theme.textSecondary, marginTop: 8 },
+                  ]}>
+                  {isDetailed
+                    ? "Itemized breakdown of all costs."
+                    : "Simplified single-line quote."}
+                </Text>
+
+                <TouchableOpacity
+                  style={[styles.previewBtn, { backgroundColor: theme.border }]}
+                  onPress={() => setIsPreviewVisible(true)}>
+                  <Text style={[styles.previewBtnText, { color: theme.text }]}>
+                    PREVIEW PDF
+                  </Text>
+                </TouchableOpacity>
+
+                {!isGenerated && !isGenerating && (
+                  <TouchableOpacity
+                    style={[
+                      styles.generateBtn,
+                      { backgroundColor: theme.primary },
+                    ]}
+                    onPress={handleGenerateInvoice}>
+                    <Text
+                      style={[
+                        styles.generateBtnText,
+                        { color: theme.background },
+                      ]}>
+                      GENERATE INVOICE
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                {isGenerating && (
+                  <View style={styles.loaderContainer}>
+                    <ActivityIndicator size="large" color={theme.primary} />
+                    <Text
+                      style={[
+                        styles.loaderText,
+                        { color: theme.textSecondary },
+                      ]}>
+                      Rendering professional invoice...
+                    </Text>
+                  </View>
+                )}
+
+                {isGenerated && (
+                  <View style={styles.actionRow}>
+                    <TouchableOpacity
+                      style={[
+                        styles.exportBtn,
+                        {
+                          flex: 1,
+                          marginRight: 6,
+                          backgroundColor: theme.success,
+                        },
+                      ]}
+                      onPress={handleShare}>
+                      <Text style={[styles.exportBtnText, { color: "#fff" }]}>
+                        SHARE PDF
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.exportBtn,
+                        {
+                          flex: 1,
+                          marginLeft: 6,
+                          backgroundColor: theme.primary,
+                        },
+                      ]}
+                      onPress={handleDownload}>
+                      <Text
+                        style={[
+                          styles.exportBtnText,
+                          { color: theme.background },
+                        ]}>
+                        DOWNLOAD PDF
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </>
+            )}
+            <View style={{ height: 300 }} />
+          </ScrollView>
+        </KeyboardAvoidingView>
 
         <Modal visible={isPreviewVisible} animationType="slide">
           <SafeAreaView
@@ -745,7 +764,8 @@ const ExportScreen = () => {
             <WebView
               originWhitelist={["*"]}
               source={{ html: generateHTML() }}
-              style={[styles.webview, { backgroundColor: theme.background }]}
+              style={[styles.webview, { backgroundColor: "#fff" }]}
+              containerStyle={{ backgroundColor: "#fff" }}
             />
           </SafeAreaView>
         </Modal>
