@@ -6,6 +6,9 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -103,245 +106,251 @@ const MaterialsScreen = () => {
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: theme.background }]}
       edges={[]}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={[styles.header, { color: theme.text }]}>MATERIALS</Text>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled">
+          <Text style={[styles.header, { color: theme.text }]}>MATERIALS</Text>
 
-        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-          ADD NEW MATERIAL
-        </Text>
-        <View
-          style={[
-            styles.section,
-            { backgroundColor: theme.surface, borderColor: theme.border },
-          ]}>
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: theme.text }]}>
-              Material Name *
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  color: theme.text,
-                  borderColor: theme.border,
-                  backgroundColor: theme.background,
-                },
-              ]}
-              value={name}
-              onChangeText={setName}
-            />
-          </View>
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: theme.text }]}>
-              Price per kilogram ({currencySymbol}) *
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  color: theme.text,
-                  borderColor: theme.border,
-                  backgroundColor: theme.background,
-                },
-              ]}
-              value={price}
-              onChangeText={setPrice}
-              keyboardType="numeric"
-            />
-          </View>
-          <TouchableOpacity
-            style={[styles.button, { backgroundColor: theme.primary }]}
-            onPress={handleAddMaterial}>
-            <Text style={[styles.buttonText, { color: theme.background }]}>
-              SAVE MATERIAL
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-          SAVED MATERIALS
-        </Text>
-        <View
-          style={[
-            styles.section,
-            { backgroundColor: theme.surface, borderColor: theme.border },
-          ]}>
-          {materials.length === 0 ? (
-            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-              No materials saved yet.
-            </Text>
-          ) : (
-            materials.map((item) => (
-              <View
-                key={item.id}
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+            ADD NEW MATERIAL
+          </Text>
+          <View
+            style={[
+              styles.section,
+              { backgroundColor: theme.surface, borderColor: theme.border },
+            ]}>
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: theme.text }]}>
+                Material Name *
+              </Text>
+              <TextInput
                 style={[
-                  styles.materialItem,
-                  { borderBottomColor: theme.border },
-                ]}>
-                {editingId === item.id ? (
-                  <View style={{ flex: 1 }}>
-                    <View style={styles.inputGroup}>
-                      <Text style={[styles.label, { color: theme.text }]}>
-                        Name *
-                      </Text>
-                      <TextInput
-                        style={[
-                          styles.input,
-                          {
-                            color: theme.text,
-                            borderColor: theme.border,
-                            backgroundColor: theme.background,
-                          },
-                        ]}
-                        value={editName}
-                        onChangeText={setEditName}
-                      />
-                    </View>
-                    <View style={styles.inputGroup}>
-                      <Text style={[styles.label, { color: theme.text }]}>
-                        Price/kg *
-                      </Text>
-                      <TextInput
-                        style={[
-                          styles.input,
-                          {
-                            color: theme.text,
-                            borderColor: theme.border,
-                            backgroundColor: theme.background,
-                          },
-                        ]}
-                        value={editPrice}
-                        onChangeText={setEditPrice}
-                        keyboardType="numeric"
-                      />
-                    </View>
-                    <View style={[styles.row, { marginTop: 8 }]}>
-                      <TouchableOpacity
-                        style={[
-                          styles.saveSmallButton,
-                          {
-                            flex: 1,
-                            marginRight: 4,
-                            backgroundColor: theme.success,
-                          },
-                        ]}
-                        onPress={saveEditedMaterial}>
-                        <Text style={[styles.buttonText, { color: "#fff" }]}>
-                          SAVE
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[
-                          styles.cancelSmallButton,
-                          {
-                            flex: 1,
-                            marginLeft: 4,
-                            backgroundColor: theme.border,
-                          },
-                        ]}
-                        onPress={() => setEditingId(null)}>
-                        <Text
-                          style={[
-                            styles.cancelButtonText,
-                            { color: theme.text },
-                          ]}>
-                          CANCEL
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ) : confirmDeleteId === item.id ? (
-                  <View style={styles.confirmDeleteContainer}>
-                    <Text
-                      style={[
-                        styles.confirmDeleteText,
-                        { color: theme.danger },
-                      ]}>
-                      Delete "{item.name}"?
-                    </Text>
-                    <View style={styles.row}>
-                      <TouchableOpacity
-                        style={[
-                          styles.confirmDeleteButton,
-                          { backgroundColor: theme.danger },
-                        ]}
-                        onPress={() => {
-                          removeMaterial(item.id);
-                          setConfirmDeleteId(null);
-                        }}>
-                        <Text style={[styles.buttonText, { color: "#fff" }]}>
-                          CONFIRM
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[
-                          styles.cancelDeleteButton,
-                          { backgroundColor: theme.border },
-                        ]}
-                        onPress={() => setConfirmDeleteId(null)}>
-                        <Text
-                          style={[
-                            styles.cancelDeleteButtonText,
-                            { color: theme.text },
-                          ]}>
-                          CANCEL
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ) : (
-                  <>
+                  styles.input,
+                  {
+                    color: theme.text,
+                    borderColor: theme.border,
+                    backgroundColor: theme.background,
+                  },
+                ]}
+                value={name}
+                onChangeText={setName}
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: theme.text }]}>
+                Price per kilogram ({currencySymbol}) *
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    color: theme.text,
+                    borderColor: theme.border,
+                    backgroundColor: theme.background,
+                  },
+                ]}
+                value={price}
+                onChangeText={setPrice}
+                keyboardType="numeric"
+              />
+            </View>
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: theme.primary }]}
+              onPress={handleAddMaterial}>
+              <Text style={[styles.buttonText, { color: theme.background }]}>
+                SAVE MATERIAL
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+            SAVED MATERIALS
+          </Text>
+          <View
+            style={[
+              styles.section,
+              { backgroundColor: theme.surface, borderColor: theme.border },
+            ]}>
+            {materials.length === 0 ? (
+              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                No materials saved yet.
+              </Text>
+            ) : (
+              materials.map((item) => (
+                <View
+                  key={item.id}
+                  style={[
+                    styles.materialItem,
+                    { borderBottomColor: theme.border },
+                  ]}>
+                  {editingId === item.id ? (
                     <View style={{ flex: 1 }}>
-                      <Text
-                        style={[styles.materialName, { color: theme.text }]}>
-                        {item.name}
-                      </Text>
+                      <View style={styles.inputGroup}>
+                        <Text style={[styles.label, { color: theme.text }]}>
+                          Name *
+                        </Text>
+                        <TextInput
+                          style={[
+                            styles.input,
+                            {
+                              color: theme.text,
+                              borderColor: theme.border,
+                              backgroundColor: theme.background,
+                            },
+                          ]}
+                          value={editName}
+                          onChangeText={setEditName}
+                        />
+                      </View>
+                      <View style={styles.inputGroup}>
+                        <Text style={[styles.label, { color: theme.text }]}>
+                          Price/kg *
+                        </Text>
+                        <TextInput
+                          style={[
+                            styles.input,
+                            {
+                              color: theme.text,
+                              borderColor: theme.border,
+                              backgroundColor: theme.background,
+                            },
+                          ]}
+                          value={editPrice}
+                          onChangeText={setEditPrice}
+                          keyboardType="numeric"
+                        />
+                      </View>
+                      <View style={[styles.row, { marginTop: 8 }]}>
+                        <TouchableOpacity
+                          style={[
+                            styles.saveSmallButton,
+                            {
+                              flex: 1,
+                              marginRight: 4,
+                              backgroundColor: theme.success,
+                            },
+                          ]}
+                          onPress={saveEditedMaterial}>
+                          <Text style={[styles.buttonText, { color: "#fff" }]}>
+                            SAVE
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[
+                            styles.cancelSmallButton,
+                            {
+                              flex: 1,
+                              marginLeft: 4,
+                              backgroundColor: theme.border,
+                            },
+                          ]}
+                          onPress={() => setEditingId(null)}>
+                          <Text
+                            style={[
+                              styles.cancelButtonText,
+                              { color: theme.text },
+                            ]}>
+                            CANCEL
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : confirmDeleteId === item.id ? (
+                    <View style={styles.confirmDeleteContainer}>
                       <Text
                         style={[
-                          styles.materialDetails,
-                          { color: theme.textSecondary },
+                          styles.confirmDeleteText,
+                          { color: theme.danger },
                         ]}>
-                        {currencySymbol}
-                        {item.price} per kg
+                        Delete "{item.name}"?
                       </Text>
+                      <View style={styles.row}>
+                        <TouchableOpacity
+                          style={[
+                            styles.confirmDeleteButton,
+                            { backgroundColor: theme.danger },
+                          ]}
+                          onPress={() => {
+                            removeMaterial(item.id);
+                            setConfirmDeleteId(null);
+                          }}>
+                          <Text style={[styles.buttonText, { color: "#fff" }]}>
+                            CONFIRM
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[
+                            styles.cancelDeleteButton,
+                            { backgroundColor: theme.border },
+                          ]}
+                          onPress={() => setConfirmDeleteId(null)}>
+                          <Text
+                            style={[
+                              styles.cancelDeleteButtonText,
+                              { color: theme.text },
+                            ]}>
+                            CANCEL
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
-                    <View style={styles.materialActions}>
-                      <TouchableOpacity
-                        style={[
-                          styles.editActionButton,
-                          { backgroundColor: theme.border },
-                        ]}
-                        onPress={() => startEditingMaterial(item)}>
+                  ) : (
+                    <>
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[styles.materialName, { color: theme.text }]}>
+                          {item.name}
+                        </Text>
                         <Text
                           style={[
-                            styles.editActionButtonText,
-                            { color: theme.text },
+                            styles.materialDetails,
+                            { color: theme.textSecondary },
                           ]}>
-                          EDIT
+                          {currencySymbol}
+                          {item.price} per kg
                         </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[
-                          styles.deleteActionButton,
-                          { backgroundColor: theme.danger + "20" },
-                        ]}
-                        onPress={() => setConfirmDeleteId(item.id)}>
-                        <Text
+                      </View>
+                      <View style={styles.materialActions}>
+                        <TouchableOpacity
                           style={[
-                            styles.deleteActionButtonText,
-                            { color: theme.danger },
-                          ]}>
-                          DELETE
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </>
-                )}
-              </View>
-            ))
-          )}
-        </View>
-      </ScrollView>
+                            styles.editActionButton,
+                            { backgroundColor: theme.border },
+                          ]}
+                          onPress={() => startEditingMaterial(item)}>
+                          <Text
+                            style={[
+                              styles.editActionButtonText,
+                              { color: theme.text },
+                            ]}>
+                            EDIT
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[
+                            styles.deleteActionButton,
+                            { backgroundColor: theme.danger + "20" },
+                          ]}
+                          onPress={() => setConfirmDeleteId(item.id)}>
+                          <Text
+                            style={[
+                              styles.deleteActionButtonText,
+                              { color: theme.danger },
+                            ]}>
+                            DELETE
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </>
+                  )}
+                </View>
+              ))
+            )}
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -145,83 +147,135 @@ const CalculatorScreen = () => {
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: theme.background }]}
       edges={[]}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={[styles.header, { color: theme.text }]}>
-          THE CALCULATOR
-        </Text>
-
-        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-          1. SELECT MATERIAL
-        </Text>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}>
         <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.horizontalScroll}>
-          {materials.map((m) => (
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled">
+          <Text style={[styles.header, { color: theme.text }]}>
+            THE CALCULATOR
+          </Text>
+
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+            1. SELECT MATERIAL
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.horizontalScroll}>
+            {materials.map((m) => (
+              <TouchableOpacity
+                key={m.id}
+                style={[
+                  styles.materialCard,
+                  { backgroundColor: theme.surface, borderColor: theme.border },
+                  selectedMaterialId === m.id && {
+                    borderColor: theme.primary,
+                    borderWidth: 2,
+                  },
+                ]}
+                onPress={() => setSelectedMaterialId(m.id)}>
+                <Text style={[styles.materialCardText, { color: theme.text }]}>
+                  {m.name}
+                </Text>
+                <Text
+                  style={[
+                    styles.materialCardSub,
+                    { color: theme.textSecondary },
+                  ]}>
+                  {currencySymbol}
+                  {m.price} / kg
+                </Text>
+              </TouchableOpacity>
+            ))}
             <TouchableOpacity
-              key={m.id}
               style={[
                 styles.materialCard,
+                styles.addMaterialCard,
                 { backgroundColor: theme.surface, borderColor: theme.border },
-                selectedMaterialId === m.id && {
-                  borderColor: theme.primary,
-                  borderWidth: 2,
-                },
               ]}
-              onPress={() => setSelectedMaterialId(m.id)}>
-              <Text style={[styles.materialCardText, { color: theme.text }]}>
-                {m.name}
-              </Text>
+              onPress={() => setIsAddingMaterial(!isAddingMaterial)}>
               <Text
-                style={[
-                  styles.materialCardSub,
-                  { color: theme.textSecondary },
-                ]}>
-                {currencySymbol}
-                {m.price} / kg
+                style={[styles.addMaterialCardText, { color: theme.primary }]}>
+                {isAddingMaterial ? "CANCEL" : "+ ADD NEW"}
               </Text>
             </TouchableOpacity>
-          ))}
-          <TouchableOpacity
-            style={[
-              styles.materialCard,
-              styles.addMaterialCard,
-              { backgroundColor: theme.surface, borderColor: theme.border },
-            ]}
-            onPress={() => setIsAddingMaterial(!isAddingMaterial)}>
-            <Text
-              style={[styles.addMaterialCardText, { color: theme.primary }]}>
-              {isAddingMaterial ? "CANCEL" : "+ ADD NEW"}
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
+          </ScrollView>
 
-        {isAddingMaterial && (
-          <View
-            style={[
-              styles.quickAddForm,
-              { backgroundColor: theme.surface, borderColor: theme.border },
-            ]}>
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: theme.text }]}>
-                Material Name *
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    color: theme.text,
-                    borderColor: theme.border,
-                    backgroundColor: theme.background,
-                  },
-                ]}
-                value={newName}
-                onChangeText={setNewName}
-              />
+          {isAddingMaterial && (
+            <View
+              style={[
+                styles.quickAddForm,
+                { backgroundColor: theme.surface, borderColor: theme.border },
+              ]}>
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: theme.text }]}>
+                  Material Name *
+                </Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      color: theme.text,
+                      borderColor: theme.border,
+                      backgroundColor: theme.background,
+                    },
+                  ]}
+                  value={newName}
+                  onChangeText={setNewName}
+                />
+              </View>
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: theme.text }]}>
+                  Price per kg ({currencySymbol}) *
+                </Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      color: theme.text,
+                      borderColor: theme.border,
+                      backgroundColor: theme.background,
+                    },
+                  ]}
+                  value={newPrice}
+                  onChangeText={setNewPrice}
+                  keyboardType="numeric"
+                />
+              </View>
+              <View style={styles.row}>
+                <TouchableOpacity
+                  style={[
+                    styles.buttonSmall,
+                    { flex: 1, marginRight: 4, backgroundColor: theme.primary },
+                  ]}
+                  onPress={handleQuickAdd}>
+                  <Text style={[styles.btnText, { color: theme.background }]}>
+                    SAVE & SELECT
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.cancelSmallBtn,
+                    { flex: 1, marginLeft: 4, backgroundColor: theme.border },
+                  ]}
+                  onPress={() => setIsAddingMaterial(false)}>
+                  <Text style={[styles.cancelBtnText, { color: theme.text }]}>
+                    CANCEL
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
+          )}
+
+          <View style={styles.inputSection}>
+            <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+              2. PRINT DETAILS
+            </Text>
             <View style={styles.inputGroup}>
               <Text style={[styles.label, { color: theme.text }]}>
-                Price per kg ({currencySymbol}) *
+                Print Time (Hours) *
               </Text>
               <TextInput
                 style={[
@@ -232,100 +286,54 @@ const CalculatorScreen = () => {
                     backgroundColor: theme.background,
                   },
                 ]}
-                value={newPrice}
-                onChangeText={setNewPrice}
+                value={printHours}
+                onChangeText={setPrintHours}
                 keyboardType="numeric"
               />
             </View>
-            <View style={styles.row}>
-              <TouchableOpacity
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: theme.text }]}>
+                Model Weight ({weightUnit}) *
+              </Text>
+              <TextInput
                 style={[
-                  styles.buttonSmall,
-                  { flex: 1, marginRight: 4, backgroundColor: theme.primary },
+                  styles.input,
+                  {
+                    color: theme.text,
+                    borderColor: theme.border,
+                    backgroundColor: theme.background,
+                  },
                 ]}
-                onPress={handleQuickAdd}>
-                <Text style={[styles.btnText, { color: theme.background }]}>
-                  SAVE & SELECT
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.cancelSmallBtn,
-                  { flex: 1, marginLeft: 4, backgroundColor: theme.border },
-                ]}
-                onPress={() => setIsAddingMaterial(false)}>
-                <Text style={[styles.cancelBtnText, { color: theme.text }]}>
-                  CANCEL
-                </Text>
-              </TouchableOpacity>
+                value={modelWeight}
+                onChangeText={setModelWeight}
+                keyboardType="numeric"
+              />
             </View>
           </View>
-        )}
 
-        <View style={styles.inputSection}>
-          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-            2. PRINT DETAILS
-          </Text>
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: theme.text }]}>
-              Print Time (Hours) *
+          <TouchableOpacity
+            style={[styles.calculateButton, { backgroundColor: theme.primary }]}
+            onPress={handleCalculate}>
+            <Text
+              style={[styles.calculateButtonText, { color: theme.background }]}>
+              CALCULATE QUOTE
             </Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  color: theme.text,
-                  borderColor: theme.border,
-                  backgroundColor: theme.background,
-                },
-              ]}
-              value={printHours}
-              onChangeText={setPrintHours}
-              keyboardType="numeric"
-            />
-          </View>
+          </TouchableOpacity>
 
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: theme.text }]}>
-              Model Weight ({weightUnit}) *
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  color: theme.text,
-                  borderColor: theme.border,
-                  backgroundColor: theme.background,
-                },
-              ]}
-              value={modelWeight}
-              onChangeText={setModelWeight}
-              keyboardType="numeric"
-            />
-          </View>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.calculateButton, { backgroundColor: theme.primary }]}
-          onPress={handleCalculate}>
-          <Text
-            style={[styles.calculateButtonText, { color: theme.background }]}>
-            CALCULATE QUOTE
-          </Text>
-        </TouchableOpacity>
-
-        {showSuccess && lastFinalQuote !== null && (
-          <View style={styles.successMessage}>
-            <Text style={[styles.massiveResult, { color: theme.primary }]}>
-              {currencySymbol}
-              {lastFinalQuote.toFixed(2)}
-            </Text>
-            <Text style={[styles.successText, { color: theme.success }]}>
-              Quote saved to Export tab
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+          {showSuccess && lastFinalQuote !== null && (
+            <View style={styles.successMessage}>
+              <Text style={[styles.massiveResult, { color: theme.primary }]}>
+                {currencySymbol}
+                {lastFinalQuote.toFixed(2)}
+              </Text>
+              <Text style={[styles.successText, { color: theme.success }]}>
+                Quote saved to Export tab
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

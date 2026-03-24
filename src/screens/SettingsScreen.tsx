@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useStore } from "../store/useStore";
@@ -236,816 +238,942 @@ const SettingsScreen = () => {
     </View>
   );
 
-  if (!isSetupComplete) {
-    return (
-      <SafeAreaView
-        style={[styles.safeArea, { backgroundColor: theme.background }]}>
-        <ScrollView contentContainerStyle={styles.container}>
-          <Text style={[styles.header, { color: theme.text }]}>
-            SETUP WIZARD
-          </Text>
-          <Text style={[styles.stepIndicator, { color: theme.textSecondary }]}>
-            STEP {currentStep} OF 3
-          </Text>
-
-          {currentStep === 1 && (
-            <View
-              style={[
-                styles.section,
-                { backgroundColor: theme.surface, borderColor: theme.border },
-              ]}>
-              <Text style={[styles.stepTitle, { color: theme.primary }]}>
-                1. BUSINESS PROFILE
-              </Text>
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: theme.text }]}>
-                  Business Name *
-                </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      color: theme.text,
-                      borderColor: theme.border,
-                      backgroundColor: theme.background,
-                    },
-                  ]}
-                  value={tmpName}
-                  onChangeText={setTmpName}
-                />
-                <Text
-                  style={[styles.helperText, { color: theme.textSecondary }]}>
-                  Required. Main header on invoice.
-                </Text>
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: theme.text }]}>
-                  Email (Optional)
-                </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      color: theme.text,
-                      borderColor: theme.border,
-                      backgroundColor: theme.background,
-                    },
-                  ]}
-                  value={tmpEmail}
-                  onChangeText={setTmpEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-                <Text
-                  style={[styles.helperText, { color: theme.textSecondary }]}>
-                  Appears on PDF invoice.
-                </Text>
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: theme.text }]}>
-                  Phone (Optional)
-                </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      color: theme.text,
-                      borderColor: theme.border,
-                      backgroundColor: theme.background,
-                    },
-                  ]}
-                  value={tmpPhone}
-                  onChangeText={handlePhoneChange}
-                  keyboardType="phone-pad"
-                />
-                <Text
-                  style={[styles.helperText, { color: theme.textSecondary }]}>
-                  Appears on PDF invoice.
-                </Text>
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: theme.text }]}>
-                  Description (Optional)
-                </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      color: theme.text,
-                      borderColor: theme.border,
-                      backgroundColor: theme.background,
-                      height: 60,
-                    },
-                  ]}
-                  value={tmpDesc}
-                  onChangeText={setTmpDesc}
-                  multiline
-                />
-                <Text
-                  style={[styles.helperText, { color: theme.textSecondary }]}>
-                  Short tagline below name.
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.nextBtn, { backgroundColor: theme.primary }]}
-                onPress={handleNext}>
-                <Text style={[styles.btnText, { color: theme.background }]}>
-                  CONTINUE
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {currentStep === 2 && (
-            <View
-              style={[
-                styles.section,
-                { backgroundColor: theme.surface, borderColor: theme.border },
-              ]}>
-              <Text style={[styles.stepTitle, { color: theme.primary }]}>
-                2. PREFERENCES
-              </Text>
-              <Text style={[styles.label, { color: theme.text }]}>
-                Currency *
-              </Text>
-              <View style={[styles.toggleRow, { borderColor: theme.primary }]}>
-                {["USD", "EUR", "GBP"].map((c) => (
-                  <TouchableOpacity
-                    key={c}
-                    onPress={() => setTmpCurrency(currencyMap[c])}
-                    style={[
-                      styles.toggleBtn,
-                      tmpCurrency === currencyMap[c] && {
-                        backgroundColor: theme.primary,
-                      },
-                    ]}>
-                    <Text
-                      style={[
-                        styles.toggleBtnText,
-                        { color: theme.primary },
-                        tmpCurrency === currencyMap[c] && {
-                          color: theme.background,
-                        },
-                      ]}>
-                      {c}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <Text
-                style={[styles.label, { color: theme.text, marginTop: 16 }]}>
-                Weight Unit *
-              </Text>
-              <View style={[styles.toggleRow, { borderColor: theme.primary }]}>
-                {["g", "oz"].map((u) => (
-                  <TouchableOpacity
-                    key={u}
-                    onPress={() => setTmpUnit(u)}
-                    style={[
-                      styles.toggleBtn,
-                      tmpUnit === u && { backgroundColor: theme.primary },
-                    ]}>
-                    <Text
-                      style={[
-                        styles.toggleBtnText,
-                        { color: theme.primary },
-                        tmpUnit === u && { color: theme.background },
-                      ]}>
-                      {u}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <Text
-                style={[styles.label, { color: theme.text, marginTop: 16 }]}>
-                PDF Font *
-              </Text>
-              <View style={[styles.toggleRow, { borderColor: theme.primary }]}>
-                {["Helvetica", "Times New Roman"].map((f) => (
-                  <TouchableOpacity
-                    key={f}
-                    onPress={() => setTmpFont(f)}
-                    style={[
-                      styles.toggleBtn,
-                      tmpFont === f && { backgroundColor: theme.primary },
-                    ]}>
-                    <Text
-                      style={[
-                        styles.toggleBtnText,
-                        { color: theme.primary },
-                        tmpFont === f && { color: theme.background },
-                      ]}>
-                      {f}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <View style={[styles.row, { marginTop: 24 }]}>
-                <TouchableOpacity
-                  style={[
-                    styles.cancelBtn,
-                    { flex: 1, marginRight: 4, backgroundColor: theme.border },
-                  ]}
-                  onPress={() => setCurrentStep(1)}>
-                  <Text style={[styles.cancelBtnText, { color: theme.text }]}>
-                    BACK
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.nextBtn,
-                    { flex: 2, marginLeft: 4, backgroundColor: theme.primary },
-                  ]}
-                  onPress={handleNext}>
-                  <Text style={[styles.btnText, { color: theme.background }]}>
-                    CONTINUE
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-
-          {currentStep === 3 && (
-            <View
-              style={[
-                styles.section,
-                { backgroundColor: theme.surface, borderColor: theme.border },
-              ]}>
-              <Text style={[styles.stepTitle, { color: theme.primary }]}>
-                3. PRINT VARIABLES
-              </Text>
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: theme.text }]}>
-                  Electricity Rate ({tmpCurrency}/kWh) *
-                </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      color: theme.text,
-                      borderColor: theme.border,
-                      backgroundColor: theme.background,
-                    },
-                  ]}
-                  value={tmpRate}
-                  onChangeText={setTmpRate}
-                  keyboardType="numeric"
-                />
-                <Text
-                  style={[styles.helperText, { color: theme.textSecondary }]}>
-                  Found on local utility bill.
-                </Text>
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: theme.text }]}>
-                  Printer Wattage (W) *
-                </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      color: theme.text,
-                      borderColor: theme.border,
-                      backgroundColor: theme.background,
-                    },
-                  ]}
-                  value={tmpWattage}
-                  onChangeText={setTmpWattage}
-                  keyboardType="numeric"
-                />
-                <Text
-                  style={[styles.helperText, { color: theme.textSecondary }]}>
-                  Average power draw of printer.
-                </Text>
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: theme.text }]}>
-                  Profit Margin (%) *
-                </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      color: theme.text,
-                      borderColor: theme.border,
-                      backgroundColor: theme.background,
-                    },
-                  ]}
-                  value={tmpMargin}
-                  onChangeText={setTmpMargin}
-                  keyboardType="numeric"
-                />
-                <Text
-                  style={[styles.helperText, { color: theme.textSecondary }]}>
-                  Markup applied to base costs.
-                </Text>
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: theme.text }]}>
-                  Wear & Tear Fee ({tmpCurrency}/hr) *
-                </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      color: theme.text,
-                      borderColor: theme.border,
-                      backgroundColor: theme.background,
-                    },
-                  ]}
-                  value={tmpFee}
-                  onChangeText={setTmpFee}
-                  keyboardType="numeric"
-                />
-                <Text
-                  style={[styles.helperText, { color: theme.textSecondary }]}>
-                  Buffer for replacement parts.
-                </Text>
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: theme.text }]}>
-                  Tax Rate (%) (Optional)
-                </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      color: theme.text,
-                      borderColor: theme.border,
-                      backgroundColor: theme.background,
-                    },
-                  ]}
-                  value={tmpTax}
-                  onChangeText={setTmpTax}
-                  keyboardType="numeric"
-                />
-              </View>
-              <View style={[styles.row, { marginTop: 24 }]}>
-                <TouchableOpacity
-                  style={[
-                    styles.cancelBtn,
-                    { flex: 1, marginRight: 4, backgroundColor: theme.border },
-                  ]}
-                  onPress={() => setCurrentStep(2)}>
-                  <Text style={[styles.cancelBtnText, { color: theme.text }]}>
-                    BACK
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.nextBtn,
-                    { flex: 2, marginLeft: 4, backgroundColor: theme.primary },
-                  ]}
-                  onPress={handleFinishSetup}>
-                  <Text style={[styles.btnText, { color: theme.background }]}>
-                    FINISH SETUP
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: theme.background }]}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={[styles.header, { color: theme.text }]}>SETTINGS</Text>
-
-        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-          USER PROFILE
-        </Text>
-        <View
-          style={[
-            styles.section,
-            { backgroundColor: theme.surface, borderColor: theme.border },
-          ]}>
-          {!editingProfile ? (
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled">
+          {!isSetupComplete ? (
             <>
-              <DisplayBox label="Business Name *" value={businessName} />
-              <DisplayBox label="Email" value={businessEmail} />
-              <DisplayBox label="Phone" value={businessPhone} />
-              <DisplayBox label="Description" value={businessDescription} />
-              <TouchableOpacity
-                style={styles.editLink}
-                onPress={() => setEditingProfile(true)}>
-                <Text style={[styles.editLinkText, { color: theme.primary }]}>
-                  EDIT PROFILE
-                </Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: theme.text }]}>
-                  Business Name *
-                </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      color: theme.text,
-                      borderColor: theme.border,
-                      backgroundColor: theme.background,
-                    },
-                  ]}
-                  value={tmpName}
-                  onChangeText={setTmpName}
-                />
-                <Text
-                  style={[styles.helperText, { color: theme.textSecondary }]}>
-                  Required. Main header on invoice.
-                </Text>
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: theme.text }]}>
-                  Email (Optional)
-                </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      color: theme.text,
-                      borderColor: theme.border,
-                      backgroundColor: theme.background,
-                    },
-                  ]}
-                  value={tmpEmail}
-                  onChangeText={setTmpEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-                <Text
-                  style={[styles.helperText, { color: theme.textSecondary }]}>
-                  Appears on PDF invoice.
-                </Text>
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: theme.text }]}>
-                  Phone (Optional)
-                </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      color: theme.text,
-                      borderColor: theme.border,
-                      backgroundColor: theme.background,
-                    },
-                  ]}
-                  value={tmpPhone}
-                  onChangeText={handlePhoneChange}
-                  keyboardType="phone-pad"
-                />
-                <Text
-                  style={[styles.helperText, { color: theme.textSecondary }]}>
-                  Appears on PDF invoice.
-                </Text>
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: theme.text }]}>
-                  Description (Optional)
-                </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      color: theme.text,
-                      borderColor: theme.border,
-                      backgroundColor: theme.background,
-                      height: 60,
-                    },
-                  ]}
-                  value={tmpDesc}
-                  onChangeText={setTmpDesc}
-                  multiline
-                />
-                <Text
-                  style={[styles.helperText, { color: theme.textSecondary }]}>
-                  Short tagline below name.
-                </Text>
-              </View>
-              <View style={styles.row}>
-                <TouchableOpacity
-                  style={[
-                    styles.saveBtn,
-                    { flex: 1, marginRight: 4, backgroundColor: theme.primary },
-                  ]}
-                  onPress={handleSaveProfile}>
-                  <Text style={[styles.btnText, { color: theme.background }]}>
-                    SAVE
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.cancelBtn,
-                    { flex: 1, marginLeft: 4, backgroundColor: theme.border },
-                  ]}
-                  onPress={() => setEditingProfile(false)}>
-                  <Text style={[styles.cancelBtnText, { color: theme.text }]}>
-                    CANCEL
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
-        </View>
-
-        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-          APP PREFERENCES
-        </Text>
-        <View
-          style={[
-            styles.section,
-            { backgroundColor: theme.surface, borderColor: theme.border },
-          ]}>
-          {!editingPrefs ? (
-            <>
-              <DisplayBox
-                label="Currency *"
-                value={`${revCurrencyMap[currencySymbol] || "USD"} (${currencySymbol})`}
-              />
-              <DisplayBox label="Weight Unit *" value={weightUnit} />
-              <DisplayBox label="PDF Font *" value={pdfFont} />
-              <TouchableOpacity
-                style={styles.editLink}
-                onPress={() => setEditingPrefs(true)}>
-                <Text style={[styles.editLinkText, { color: theme.primary }]}>
-                  EDIT PREFERENCES
-                </Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <Text style={[styles.label, { color: theme.text }]}>
-                Currency *
+              <Text style={[styles.header, { color: theme.text }]}>
+                SETUP WIZARD
               </Text>
-              <View style={[styles.toggleRow, { borderColor: theme.primary }]}>
-                {["USD", "EUR", "GBP"].map((c) => (
-                  <TouchableOpacity
-                    key={c}
-                    onPress={() => setTmpCurrency(currencyMap[c])}
-                    style={[
-                      styles.toggleBtn,
-                      tmpCurrency === currencyMap[c] && {
-                        backgroundColor: theme.primary,
-                      },
-                    ]}>
-                    <Text
+              <Text
+                style={[styles.stepIndicator, { color: theme.textSecondary }]}>
+                STEP {currentStep} OF 3
+              </Text>
+
+              {currentStep === 1 && (
+                <View
+                  style={[
+                    styles.section,
+                    {
+                      backgroundColor: theme.surface,
+                      borderColor: theme.border,
+                    },
+                  ]}>
+                  <Text style={[styles.stepTitle, { color: theme.primary }]}>
+                    1. BUSINESS PROFILE
+                  </Text>
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: theme.text }]}>
+                      Business Name *
+                    </Text>
+                    <TextInput
                       style={[
-                        styles.toggleBtnText,
-                        { color: theme.primary },
-                        tmpCurrency === currencyMap[c] && {
-                          color: theme.background,
+                        styles.input,
+                        {
+                          color: theme.text,
+                          borderColor: theme.border,
+                          backgroundColor: theme.background,
                         },
-                      ]}>
-                      {c}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <Text
-                style={[styles.label, { color: theme.text, marginTop: 16 }]}>
-                Weight Unit *
-              </Text>
-              <View style={[styles.toggleRow, { borderColor: theme.primary }]}>
-                {["g", "oz"].map((u) => (
-                  <TouchableOpacity
-                    key={u}
-                    onPress={() => setTmpUnit(u)}
-                    style={[
-                      styles.toggleBtn,
-                      tmpUnit === u && { backgroundColor: theme.primary },
-                    ]}>
-                    <Text
-                      style={[
-                        styles.toggleBtnText,
-                        { color: theme.primary },
-                        tmpUnit === u && { color: theme.background },
-                      ]}>
-                      {u}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <Text
-                style={[styles.label, { color: theme.text, marginTop: 16 }]}>
-                PDF Font *
-              </Text>
-              <View style={[styles.toggleRow, { borderColor: theme.primary }]}>
-                {["Helvetica", "Times New Roman"].map((f) => (
-                  <TouchableOpacity
-                    key={f}
-                    onPress={() => setTmpFont(f)}
-                    style={[
-                      styles.toggleBtn,
-                      tmpFont === f && { backgroundColor: theme.primary },
-                    ]}>
-                    <Text
-                      style={[
-                        styles.toggleBtnText,
-                        { color: theme.primary },
-                        tmpFont === f && { color: theme.background },
-                      ]}>
-                      {f}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <View style={(styles.row, { marginTop: 24 })}>
-                <TouchableOpacity
-                  style={[
-                    styles.saveBtn,
-                    { flex: 1, marginRight: 4, backgroundColor: theme.primary },
-                  ]}
-                  onPress={handleSavePrefs}>
-                  <Text style={[styles.btnText, { color: theme.background }]}>
-                    SAVE
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.cancelBtn,
-                    { flex: 1, marginLeft: 4, backgroundColor: theme.border },
-                  ]}
-                  onPress={() => setEditingPrefs(false)}>
-                  <Text style={[styles.cancelBtnText, { color: theme.text }]}>
-                    CANCEL
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
-        </View>
-
-        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-          PRINT VARIABLES
-        </Text>
-        <View
-          style={[
-            styles.section,
-            { backgroundColor: theme.surface, borderColor: theme.border },
-          ]}>
-          {!editingVars ? (
-            <>
-              <DisplayBox
-                label="Electricity Rate *"
-                value={`${currencySymbol}${electricityRate}/kWh`}
-              />
-              <DisplayBox
-                label="Printer Wattage (W) *"
-                value={`${printerWattage}W`}
-              />
-              <DisplayBox
-                label="Profit Margin (%) *"
-                value={`${profitMargin}%`}
-              />
-              <DisplayBox
-                label="Wear & Tear Fee *"
-                value={`${currencySymbol}${wearAndTearFee}/hr`}
-              />
-              <DisplayBox label="Tax Rate (%)" value={`${taxRate}%`} />
-              <TouchableOpacity
-                style={styles.editLink}
-                onPress={() => setEditingVars(true)}>
-                <Text style={[styles.editLinkText, { color: theme.primary }]}>
-                  EDIT VARIABLES
-                </Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              {[
-                {
-                  label: `Electricity Rate (${currencySymbol}/kWh) *`,
-                  val: tmpRate,
-                  set: setTmpRate,
-                  helper: "Found on local utility bill.",
-                },
-                {
-                  label: "Printer Wattage (W) *",
-                  val: tmpWattage,
-                  set: setTmpWattage,
-                  helper: "Average power draw of printer.",
-                },
-                {
-                  label: "Profit Margin (%) *",
-                  val: tmpMargin,
-                  set: setTmpMargin,
-                  helper: "Markup applied to base costs.",
-                },
-                {
-                  label: `Wear & Tear Fee (${currencySymbol}/hr) *`,
-                  val: tmpFee,
-                  set: setTmpFee,
-                  helper: "Buffer for replacement parts.",
-                },
-                {
-                  label: "Tax Rate (%)",
-                  val: tmpTax,
-                  set: setTmpTax,
-                  helper: "",
-                },
-              ].map((item, idx) => (
-                <View key={idx} style={styles.inputGroup}>
-                  <Text style={[styles.label, { color: theme.text }]}>
-                    {item.label}
-                  </Text>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      {
-                        color: theme.text,
-                        borderColor: theme.border,
-                        backgroundColor: theme.background,
-                      },
-                    ]}
-                    value={item.val}
-                    onChangeText={item.set}
-                    keyboardType="numeric"
-                  />
-                  {item.helper ? (
+                      ]}
+                      value={tmpName}
+                      onChangeText={setTmpName}
+                    />
                     <Text
                       style={[
                         styles.helperText,
                         { color: theme.textSecondary },
                       ]}>
-                      {item.helper}
+                      Required. Main header on invoice.
                     </Text>
-                  ) : null}
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: theme.text }]}>
+                      Email (Optional)
+                    </Text>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        {
+                          color: theme.text,
+                          borderColor: theme.border,
+                          backgroundColor: theme.background,
+                        },
+                      ]}
+                      value={tmpEmail}
+                      onChangeText={setTmpEmail}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                    />
+                    <Text
+                      style={[
+                        styles.helperText,
+                        { color: theme.textSecondary },
+                      ]}>
+                      Appears on PDF invoice.
+                    </Text>
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: theme.text }]}>
+                      Phone (Optional)
+                    </Text>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        {
+                          color: theme.text,
+                          borderColor: theme.border,
+                          backgroundColor: theme.background,
+                        },
+                      ]}
+                      value={tmpPhone}
+                      onChangeText={handlePhoneChange}
+                      keyboardType="phone-pad"
+                    />
+                    <Text
+                      style={[
+                        styles.helperText,
+                        { color: theme.textSecondary },
+                      ]}>
+                      Appears on PDF invoice.
+                    </Text>
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: theme.text }]}>
+                      Description (Optional)
+                    </Text>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        {
+                          color: theme.text,
+                          borderColor: theme.border,
+                          backgroundColor: theme.background,
+                          height: 60,
+                        },
+                      ]}
+                      value={tmpDesc}
+                      onChangeText={setTmpDesc}
+                      multiline
+                    />
+                    <Text
+                      style={[
+                        styles.helperText,
+                        { color: theme.textSecondary },
+                      ]}>
+                      Short tagline below name.
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.nextBtn, { backgroundColor: theme.primary }]}
+                    onPress={handleNext}>
+                    <Text style={[styles.btnText, { color: theme.background }]}>
+                      CONTINUE
+                    </Text>
+                  </TouchableOpacity>
                 </View>
-              ))}
-              <View style={styles.row}>
-                <TouchableOpacity
+              )}
+
+              {currentStep === 2 && (
+                <View
                   style={[
-                    styles.saveBtn,
-                    { flex: 1, marginRight: 4, backgroundColor: theme.primary },
-                  ]}
-                  onPress={handleSaveVars}>
-                  <Text style={[styles.btnText, { color: theme.background }]}>
-                    SAVE
+                    styles.section,
+                    {
+                      backgroundColor: theme.surface,
+                      borderColor: theme.border,
+                    },
+                  ]}>
+                  <Text style={[styles.stepTitle, { color: theme.primary }]}>
+                    2. PREFERENCES
+                  </Text>
+                  <Text style={[styles.label, { color: theme.text }]}>
+                    Currency *
+                  </Text>
+                  <View
+                    style={[styles.toggleRow, { borderColor: theme.primary }]}>
+                    {["USD", "EUR", "GBP"].map((c) => (
+                      <TouchableOpacity
+                        key={c}
+                        onPress={() => setTmpCurrency(currencyMap[c])}
+                        style={[
+                          styles.toggleBtn,
+                          tmpCurrency === currencyMap[c] && {
+                            backgroundColor: theme.primary,
+                          },
+                        ]}>
+                        <Text
+                          style={[
+                            styles.toggleBtnText,
+                            { color: theme.primary },
+                            tmpCurrency === currencyMap[c] && {
+                              color: theme.background,
+                            },
+                          ]}>
+                          {c}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <Text
+                    style={[styles.label, { color: theme.text, marginTop: 16 }]}>
+                    Weight Unit *
+                  </Text>
+                  <View
+                    style={[styles.toggleRow, { borderColor: theme.primary }]}>
+                    {["g", "oz"].map((u) => (
+                      <TouchableOpacity
+                        key={u}
+                        onPress={() => setTmpUnit(u)}
+                        style={[
+                          styles.toggleBtn,
+                          tmpUnit === u && { backgroundColor: theme.primary },
+                        ]}>
+                        <Text
+                          style={[
+                            styles.toggleBtnText,
+                            { color: theme.primary },
+                            tmpUnit === u && { color: theme.background },
+                          ]}>
+                          {u}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <Text
+                    style={[styles.label, { color: theme.text, marginTop: 16 }]}>
+                    PDF Font *
+                  </Text>
+                  <View
+                    style={[styles.toggleRow, { borderColor: theme.primary }]}>
+                    {["Helvetica", "Times New Roman"].map((f) => (
+                      <TouchableOpacity
+                        key={f}
+                        onPress={() => setTmpFont(f)}
+                        style={[
+                          styles.toggleBtn,
+                          tmpFont === f && { backgroundColor: theme.primary },
+                        ]}>
+                        <Text
+                          style={[
+                            styles.toggleBtnText,
+                            { color: theme.primary },
+                            tmpFont === f && { color: theme.background },
+                          ]}>
+                          {f}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <View style={[styles.row, { marginTop: 24 }]}>
+                    <TouchableOpacity
+                      style={[
+                        styles.cancelBtn,
+                        {
+                          flex: 1,
+                          marginRight: 4,
+                          backgroundColor: theme.border,
+                        },
+                      ]}
+                      onPress={() => setCurrentStep(1)}>
+                      <Text
+                        style={[styles.cancelBtnText, { color: theme.text }]}>
+                        BACK
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.nextBtn,
+                        {
+                          flex: 2,
+                          marginLeft: 4,
+                          backgroundColor: theme.primary,
+                        },
+                      ]}
+                      onPress={handleNext}>
+                      <Text
+                        style={[styles.btnText, { color: theme.background }]}>
+                        CONTINUE
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+
+              {currentStep === 3 && (
+                <View
+                  style={[
+                    styles.section,
+                    {
+                      backgroundColor: theme.surface,
+                      borderColor: theme.border,
+                    },
+                  ]}>
+                  <Text style={[styles.stepTitle, { color: theme.primary }]}>
+                    3. PRINT VARIABLES
+                  </Text>
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: theme.text }]}>
+                      Electricity Rate ({tmpCurrency}/kWh) *
+                    </Text>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        {
+                          color: theme.text,
+                          borderColor: theme.border,
+                          backgroundColor: theme.background,
+                        },
+                      ]}
+                      value={tmpRate}
+                      onChangeText={setTmpRate}
+                      keyboardType="numeric"
+                    />
+                    <Text
+                      style={[
+                        styles.helperText,
+                        { color: theme.textSecondary },
+                      ]}>
+                      Found on local utility bill.
+                    </Text>
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: theme.text }]}>
+                      Printer Wattage (W) *
+                    </Text>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        {
+                          color: theme.text,
+                          borderColor: theme.border,
+                          backgroundColor: theme.background,
+                        },
+                      ]}
+                      value={tmpWattage}
+                      onChangeText={setTmpWattage}
+                      keyboardType="numeric"
+                    />
+                    <Text
+                      style={[
+                        styles.helperText,
+                        { color: theme.textSecondary },
+                      ]}>
+                      Average power draw of printer.
+                    </Text>
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: theme.text }]}>
+                      Profit Margin (%) *
+                    </Text>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        {
+                          color: theme.text,
+                          borderColor: theme.border,
+                          backgroundColor: theme.background,
+                        },
+                      ]}
+                      value={tmpMargin}
+                      onChangeText={setTmpMargin}
+                      keyboardType="numeric"
+                    />
+                    <Text
+                      style={[
+                        styles.helperText,
+                        { color: theme.textSecondary },
+                      ]}>
+                      Markup applied to base costs.
+                    </Text>
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: theme.text }]}>
+                      Wear & Tear Fee ({tmpCurrency}/hr) *
+                    </Text>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        {
+                          color: theme.text,
+                          borderColor: theme.border,
+                          backgroundColor: theme.background,
+                        },
+                      ]}
+                      value={tmpFee}
+                      onChangeText={setTmpFee}
+                      keyboardType="numeric"
+                    />
+                    <Text
+                      style={[
+                        styles.helperText,
+                        { color: theme.textSecondary },
+                      ]}>
+                      Buffer for replacement parts.
+                    </Text>
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: theme.text }]}>
+                      Tax Rate (%) (Optional)
+                    </Text>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        {
+                          color: theme.text,
+                          borderColor: theme.border,
+                          backgroundColor: theme.background,
+                        },
+                      ]}
+                      value={tmpTax}
+                      onChangeText={setTmpTax}
+                      keyboardType="numeric"
+                    />
+                  </View>
+                  <View style={[styles.row, { marginTop: 24 }]}>
+                    <TouchableOpacity
+                      style={[
+                        styles.cancelBtn,
+                        {
+                          flex: 1,
+                          marginRight: 4,
+                          backgroundColor: theme.border,
+                        },
+                      ]}
+                      onPress={() => setCurrentStep(2)}>
+                      <Text
+                        style={[styles.cancelBtnText, { color: theme.text }]}>
+                        BACK
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.nextBtn,
+                        {
+                          flex: 2,
+                          marginLeft: 4,
+                          backgroundColor: theme.primary,
+                        },
+                      ]}
+                      onPress={handleFinishSetup}>
+                      <Text
+                        style={[styles.btnText, { color: theme.background }]}>
+                        FINISH SETUP
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+            </>
+          ) : (
+            <>
+              <Text style={[styles.header, { color: theme.text }]}>
+                SETTINGS
+              </Text>
+
+              <Text
+                style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+                USER PROFILE
+              </Text>
+              <View
+                style={[
+                  styles.section,
+                  { backgroundColor: theme.surface, borderColor: theme.border },
+                ]}>
+                {!editingProfile ? (
+                  <>
+                    <DisplayBox label="Business Name *" value={businessName} />
+                    <DisplayBox label="Email" value={businessEmail} />
+                    <DisplayBox label="Phone" value={businessPhone} />
+                    <DisplayBox
+                      label="Description"
+                      value={businessDescription}
+                    />
+                    <TouchableOpacity
+                      style={styles.editLink}
+                      onPress={() => setEditingProfile(true)}>
+                      <Text
+                        style={[styles.editLinkText, { color: theme.primary }]}>
+                        EDIT PROFILE
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    <View style={styles.inputGroup}>
+                      <Text style={[styles.label, { color: theme.text }]}>
+                        Business Name *
+                      </Text>
+                      <TextInput
+                        style={[
+                          styles.input,
+                          {
+                            color: theme.text,
+                            borderColor: theme.border,
+                            backgroundColor: theme.background,
+                          },
+                        ]}
+                        value={tmpName}
+                        onChangeText={setTmpName}
+                      />
+                      <Text
+                        style={[
+                          styles.helperText,
+                          { color: theme.textSecondary },
+                        ]}>
+                        Required. Main header on invoice.
+                      </Text>
+                    </View>
+                    <View style={styles.inputGroup}>
+                      <Text style={[styles.label, { color: theme.text }]}>
+                        Email (Optional)
+                      </Text>
+                      <TextInput
+                        style={[
+                          styles.input,
+                          {
+                            color: theme.text,
+                            borderColor: theme.border,
+                            backgroundColor: theme.background,
+                          },
+                        ]}
+                        value={tmpEmail}
+                        onChangeText={setTmpEmail}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                      />
+                      <Text
+                        style={[
+                          styles.helperText,
+                          { color: theme.textSecondary },
+                        ]}>
+                        Appears on PDF invoice.
+                      </Text>
+                    </View>
+                    <View style={styles.inputGroup}>
+                      <Text style={[styles.label, { color: theme.text }]}>
+                        Phone (Optional)
+                      </Text>
+                      <TextInput
+                        style={[
+                          styles.input,
+                          {
+                            color: theme.text,
+                            borderColor: theme.border,
+                            backgroundColor: theme.background,
+                          },
+                        ]}
+                        value={tmpPhone}
+                        onChangeText={handlePhoneChange}
+                        keyboardType="phone-pad"
+                      />
+                      <Text
+                        style={[
+                          styles.helperText,
+                          { color: theme.textSecondary },
+                        ]}>
+                        Appears on PDF invoice.
+                      </Text>
+                    </View>
+                    <View style={styles.inputGroup}>
+                      <Text style={[styles.label, { color: theme.text }]}>
+                        Description (Optional)
+                      </Text>
+                      <TextInput
+                        style={[
+                          styles.input,
+                          {
+                            color: theme.text,
+                            borderColor: theme.border,
+                            backgroundColor: theme.background,
+                            height: 60,
+                          },
+                        ]}
+                        value={tmpDesc}
+                        onChangeText={setTmpDesc}
+                        multiline
+                      />
+                      <Text
+                        style={[
+                          styles.helperText,
+                          { color: theme.textSecondary },
+                        ]}>
+                        Short tagline below name.
+                      </Text>
+                    </View>
+                    <View style={styles.row}>
+                      <TouchableOpacity
+                        style={[
+                          styles.saveBtn,
+                          {
+                            flex: 1,
+                            marginRight: 4,
+                            backgroundColor: theme.primary,
+                          },
+                        ]}
+                        onPress={handleSaveProfile}>
+                        <Text
+                          style={[styles.btnText, { color: theme.background }]}>
+                          SAVE
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.cancelBtn,
+                          {
+                            flex: 1,
+                            marginLeft: 4,
+                            backgroundColor: theme.border,
+                          },
+                        ]}
+                        onPress={() => setEditingProfile(false)}>
+                        <Text
+                          style={[styles.cancelBtnText, { color: theme.text }]}>
+                          CANCEL
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                )}
+              </View>
+
+              <Text
+                style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+                APP PREFERENCES
+              </Text>
+              <View
+                style={[
+                  styles.section,
+                  { backgroundColor: theme.surface, borderColor: theme.border },
+                ]}>
+                {!editingPrefs ? (
+                  <>
+                    <DisplayBox
+                      label="Currency *"
+                      value={`${revCurrencyMap[currencySymbol] || "USD"} (${currencySymbol})`}
+                    />
+                    <DisplayBox label="Weight Unit *" value={weightUnit} />
+                    <DisplayBox label="PDF Font *" value={pdfFont} />
+                    <TouchableOpacity
+                      style={styles.editLink}
+                      onPress={() => setEditingPrefs(true)}>
+                      <Text
+                        style={[styles.editLinkText, { color: theme.primary }]}>
+                        EDIT PREFERENCES
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    <Text style={[styles.label, { color: theme.text }]}>
+                      Currency *
+                    </Text>
+                    <View
+                      style={[styles.toggleRow, { borderColor: theme.primary }]}>
+                      {["USD", "EUR", "GBP"].map((c) => (
+                        <TouchableOpacity
+                          key={c}
+                          onPress={() => setTmpCurrency(currencyMap[c])}
+                          style={[
+                            styles.toggleBtn,
+                            tmpCurrency === currencyMap[c] && {
+                              backgroundColor: theme.primary,
+                            },
+                          ]}>
+                          <Text
+                            style={[
+                              styles.toggleBtnText,
+                              { color: theme.primary },
+                              tmpCurrency === currencyMap[c] && {
+                                color: theme.background,
+                              },
+                            ]}>
+                            {c}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    <Text
+                      style={[
+                        styles.label,
+                        { color: theme.text, marginTop: 16 },
+                      ]}>
+                      Weight Unit *
+                    </Text>
+                    <View
+                      style={[styles.toggleRow, { borderColor: theme.primary }]}>
+                      {["g", "oz"].map((u) => (
+                        <TouchableOpacity
+                          key={u}
+                          onPress={() => setTmpUnit(u)}
+                          style={[
+                            styles.toggleBtn,
+                            tmpUnit === u && { backgroundColor: theme.primary },
+                          ]}>
+                          <Text
+                            style={[
+                              styles.toggleBtnText,
+                              { color: theme.primary },
+                              tmpUnit === u && { color: theme.background },
+                            ]}>
+                            {u}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    <Text
+                      style={[
+                        styles.label,
+                        { color: theme.text, marginTop: 16 },
+                      ]}>
+                      PDF Font *
+                    </Text>
+                    <View
+                      style={[styles.toggleRow, { borderColor: theme.primary }]}>
+                      {["Helvetica", "Times New Roman"].map((f) => (
+                        <TouchableOpacity
+                          key={f}
+                          onPress={() => setTmpFont(f)}
+                          style={[
+                            styles.toggleBtn,
+                            tmpFont === f && { backgroundColor: theme.primary },
+                          ]}>
+                          <Text
+                            style={[
+                              styles.toggleBtnText,
+                              { color: theme.primary },
+                              tmpFont === f && { color: theme.background },
+                            ]}>
+                            {f}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    <View style={(styles.row, { marginTop: 24 })}>
+                      <TouchableOpacity
+                        style={[
+                          styles.saveBtn,
+                          {
+                            flex: 1,
+                            marginRight: 4,
+                            backgroundColor: theme.primary,
+                          },
+                        ]}
+                        onPress={handleSavePrefs}>
+                        <Text
+                          style={[styles.btnText, { color: theme.background }]}>
+                          SAVE
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.cancelBtn,
+                          {
+                            flex: 1,
+                            marginLeft: 4,
+                            backgroundColor: theme.border,
+                          },
+                        ]}
+                        onPress={() => setEditingPrefs(false)}>
+                        <Text
+                          style={[styles.cancelBtnText, { color: theme.text }]}>
+                          CANCEL
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                )}
+              </View>
+
+              <Text
+                style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+                PRINT VARIABLES
+              </Text>
+              <View
+                style={[
+                  styles.section,
+                  { backgroundColor: theme.surface, borderColor: theme.border },
+                ]}>
+                {!editingVars ? (
+                  <>
+                    <DisplayBox
+                      label="Electricity Rate *"
+                      value={`${currencySymbol}${electricityRate}/kWh`}
+                    />
+                    <DisplayBox
+                      label="Printer Wattage (W) *"
+                      value={`${printerWattage}W`}
+                    />
+                    <DisplayBox
+                      label="Profit Margin (%) *"
+                      value={`${profitMargin}%`}
+                    />
+                    <DisplayBox
+                      label="Wear & Tear Fee *"
+                      value={`${currencySymbol}${wearAndTearFee}/hr`}
+                    />
+                    <DisplayBox label="Tax Rate (%)" value={`${taxRate}%`} />
+                    <TouchableOpacity
+                      style={styles.editLink}
+                      onPress={() => setEditingVars(true)}>
+                      <Text
+                        style={[styles.editLinkText, { color: theme.primary }]}>
+                        EDIT VARIABLES
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    {[
+                      {
+                        label: `Electricity Rate (${currencySymbol}/kWh) *`,
+                        val: tmpRate,
+                        set: setTmpRate,
+                        helper: "Found on local utility bill.",
+                      },
+                      {
+                        label: "Printer Wattage (W) *",
+                        val: tmpWattage,
+                        set: setTmpWattage,
+                        helper: "Average power draw of printer.",
+                      },
+                      {
+                        label: "Profit Margin (%) *",
+                        val: tmpMargin,
+                        set: setTmpMargin,
+                        helper: "Markup applied to base costs.",
+                      },
+                      {
+                        label: `Wear & Tear Fee (${currencySymbol}/hr) *`,
+                        val: tmpFee,
+                        set: setTmpFee,
+                        helper: "Buffer for replacement parts.",
+                      },
+                      {
+                        label: "Tax Rate (%)",
+                        val: tmpTax,
+                        set: setTmpTax,
+                        helper: "",
+                      },
+                    ].map((item, idx) => (
+                      <View key={idx} style={styles.inputGroup}>
+                        <Text style={[styles.label, { color: theme.text }]}>
+                          {item.label}
+                        </Text>
+                        <TextInput
+                          style={[
+                            styles.input,
+                            {
+                              color: theme.text,
+                              borderColor: theme.border,
+                              backgroundColor: theme.background,
+                            },
+                          ]}
+                          value={item.val}
+                          onChangeText={item.set}
+                          keyboardType="numeric"
+                        />
+                        {item.helper ? (
+                          <Text
+                            style={[
+                              styles.helperText,
+                              { color: theme.textSecondary },
+                            ]}>
+                            {item.helper}
+                          </Text>
+                        ) : null}
+                      </View>
+                    ))}
+                    <View style={styles.row}>
+                      <TouchableOpacity
+                        style={[
+                          styles.saveBtn,
+                          {
+                            flex: 1,
+                            marginRight: 4,
+                            backgroundColor: theme.primary,
+                          },
+                        ]}
+                        onPress={handleSaveVars}>
+                        <Text
+                          style={[styles.btnText, { color: theme.background }]}>
+                          SAVE
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.cancelBtn,
+                          {
+                            flex: 1,
+                            marginLeft: 4,
+                            backgroundColor: theme.border,
+                          },
+                        ]}
+                        onPress={() => setEditingVars(false)}>
+                        <Text
+                          style={[styles.cancelBtnText, { color: theme.text }]}>
+                          CANCEL
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                )}
+              </View>
+
+              <View
+                style={[
+                  styles.section,
+                  {
+                    backgroundColor: theme.surface,
+                    borderColor: theme.border,
+                    marginTop: 20,
+                  },
+                ]}>
+                <TouchableOpacity
+                  style={[styles.dangerBtn, { borderColor: theme.danger }]}
+                  onPress={() =>
+                    Alert.alert("Clear", "Delete history?", [
+                      { text: "Cancel" },
+                      {
+                        text: "Clear",
+                        style: "destructive",
+                        onPress: clearAllQuotes,
+                      },
+                    ])
+                  }>
+                  <Text style={[styles.dangerBtnText, { color: theme.danger }]}>
+                    CLEAR EXPORT HISTORY
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
-                    styles.cancelBtn,
-                    { flex: 1, marginLeft: 4, backgroundColor: theme.border },
+                    styles.dangerBtn,
+                    { borderColor: theme.danger, marginTop: 12 },
                   ]}
-                  onPress={() => setEditingVars(false)}>
-                  <Text style={[styles.cancelBtnText, { color: theme.text }]}>
-                    CANCEL
+                  onPress={() =>
+                    Alert.alert("Reset", "Factory reset app?", [
+                      { text: "Cancel" },
+                      {
+                        text: "Reset",
+                        style: "destructive",
+                        onPress: factoryReset,
+                      },
+                    ])
+                  }>
+                  <Text style={[styles.dangerBtnText, { color: theme.danger }]}>
+                    FACTORY RESET APP
                   </Text>
                 </TouchableOpacity>
               </View>
             </>
           )}
-        </View>
-
-        <View
-          style={[
-            styles.section,
-            {
-              backgroundColor: theme.surface,
-              borderColor: theme.border,
-              marginTop: 20,
-            },
-          ]}>
-          <TouchableOpacity
-            style={[styles.dangerBtn, { borderColor: theme.danger }]}
-            onPress={() =>
-              Alert.alert("Clear", "Delete history?", [
-                { text: "Cancel" },
-                {
-                  text: "Clear",
-                  style: "destructive",
-                  onPress: clearAllQuotes,
-                },
-              ])
-            }>
-            <Text style={[styles.dangerBtnText, { color: theme.danger }]}>
-              CLEAR EXPORT HISTORY
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.dangerBtn,
-              { borderColor: theme.danger, marginTop: 12 },
-            ]}
-            onPress={() =>
-              Alert.alert("Reset", "Factory reset app?", [
-                { text: "Cancel" },
-                { text: "Reset", style: "destructive", onPress: factoryReset },
-              ])
-            }>
-            <Text style={[styles.dangerBtnText, { color: theme.danger }]}>
-              FACTORY RESET APP
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
