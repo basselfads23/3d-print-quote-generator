@@ -1,49 +1,46 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
+  LayoutAnimation,
+  Image,
+  ActivityIndicator,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as ImagePicker from "expo-image-picker";
 import { useStore } from "../store/useStore";
 import { useTheme } from "../theme";
+import { useKeyboardScroll } from "../hooks/useKeyboardScroll";
+import LabeledInput from "../components/LabeledInput";
+import SegmentedControl from "../components/SegmentedControl";
+import DisplayField from "../components/DisplayField";
+import SectionLabel from "../components/SectionLabel";
 
 const SettingsScreen = () => {
   const theme = useTheme();
-  const scrollViewRef = useRef<ScrollView>(null);
+  const { scrollViewRef, onScrollViewScroll, onFocusFor } = useKeyboardScroll();
+
   const {
     isSetupComplete,
     completeSetup,
-    businessName,
-    setBusinessName,
-    businessEmail,
-    setBusinessEmail,
-    businessPhone,
-    setBusinessPhone,
-    businessDescription,
-    setBusinessDescription,
-    currencySymbol,
-    setCurrencySymbol,
-    weightUnit,
-    setWeightUnit,
-    pdfFont,
-    setPdfFont,
-    electricityRate,
-    setElectricityRate,
-    printerWattage,
-    setPrinterWattage,
-    profitMargin,
-    setProfitMargin,
-    wearAndTearFee,
-    setWearAndTearFee,
-    taxRate,
-    setTaxRate,
+    businessName, setBusinessName,
+    businessEmail, setBusinessEmail,
+    businessPhone, setBusinessPhone,
+    businessDescription, setBusinessDescription,
+    businessLogo, setBusinessLogo,
+    currencySymbol, setCurrencySymbol,
+    weightUnit, setWeightUnit,
+    pdfFont, setPdfFont,
+    electricityRate, setElectricityRate,
+    printerWattage, setPrinterWattage,
+    profitMargin, setProfitMargin,
+    wearAndTearFee, setWearAndTearFee,
+    taxRate, setTaxRate,
     clearAllQuotes,
     factoryReset,
   } = useStore();
@@ -52,8 +49,10 @@ const SettingsScreen = () => {
   const [editingProfile, setEditingProfile] = useState(false);
   const [editingPrefs, setEditingPrefs] = useState(false);
   const [editingVars, setEditingVars] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [showFormula, setShowFormula] = useState(false);
 
-  // Local Temp States
+  // Temp states (committed to store on save)
   const [tmpName, setTmpName] = useState(businessName);
   const [tmpEmail, setTmpEmail] = useState(businessEmail);
   const [tmpPhone, setTmpPhone] = useState(businessPhone);
@@ -66,6 +65,17 @@ const SettingsScreen = () => {
   const [tmpMargin, setTmpMargin] = useState(profitMargin.toString());
   const [tmpFee, setTmpFee] = useState(wearAndTearFee.toString());
   const [tmpTax, setTmpTax] = useState(taxRate.toString());
+
+  // Refs for keyboard scroll
+  const nameRef = useRef<View>(null);
+  const emailRef = useRef<View>(null);
+  const phoneRef = useRef<View>(null);
+  const descRef = useRef<View>(null);
+  const rateRef = useRef<View>(null);
+  const wattageRef = useRef<View>(null);
+  const marginRef = useRef<View>(null);
+  const feeRef = useRef<View>(null);
+  const taxRef = useRef<View>(null);
 
   useEffect(() => {
     if (isSetupComplete) {
@@ -84,31 +94,12 @@ const SettingsScreen = () => {
     } else {
       setCurrentStep(1);
     }
-  }, [
-    isSetupComplete,
-    businessName,
-    businessEmail,
-    businessPhone,
-    businessDescription,
-    currencySymbol,
-    weightUnit,
-    pdfFont,
-    electricityRate,
-    profitMargin,
-    wearAndTearFee,
-    taxRate,
-  ]);
+  }, [isSetupComplete, businessName, businessEmail, businessPhone,
+      businessDescription, currencySymbol, weightUnit, pdfFont,
+      electricityRate, profitMargin, wearAndTearFee, taxRate]);
 
-  const currencyMap: { [key: string]: string } = {
-    USD: "$",
-    EUR: "€",
-    GBP: "£",
-  };
-  const revCurrencyMap: { [key: string]: string } = {
-    $: "USD",
-    "€": "EUR",
-    "£": "GBP",
-  };
+  const currencyMap: Record<string, string> = { USD: "$", EUR: "€", GBP: "£" };
+  const revCurrencyMap: Record<string, string> = { $: "USD", "€": "EUR", "£": "GBP" };
 
   const handlePhoneChange = (text: string) => {
     const filtered = text.replace(/(?!^\+)[^0-9]/g, "").slice(0, 16);
@@ -120,33 +111,37 @@ const SettingsScreen = () => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
-  const validateStep = (step: number) => {
+  const validateNumericField = (val: string, fieldName: string): boolean => {
+    if (!val.trim()) {
+      Alert.alert("Required", `${fieldName} is required.`);
+      return false;
+    }
+    const n = parseFloat(val);
+    if (isNaN(n) || n < 0) {
+      Alert.alert("Invalid Value", `${fieldName} must be a valid positive number.`);
+      return false;
+    }
+    return true;
+  };
+
+  const validateStep = (step: number): boolean => {
     if (step === 1) {
       if (!tmpName.trim()) {
         Alert.alert("Required", "Business Name is required.");
         return false;
       }
-      if (tmpEmail && !validateEmail(tmpEmail)) {
-        Alert.alert("Error", "Invalid email format.");
+      if (!validateEmail(tmpEmail)) {
+        Alert.alert("Invalid Email", "Please enter a valid email address.");
         return false;
       }
-    } else if (step === 2) {
-      if (!tmpCurrency || !tmpUnit || !tmpFont) return false;
     } else if (step === 3) {
-      if (!tmpRate || !tmpWattage || !tmpMargin || !tmpFee) {
-        Alert.alert("Required", "Missing fields.");
-        return false;
-      }
-      if (
-        isNaN(parseFloat(tmpRate)) || parseFloat(tmpRate) < 0 ||
-        isNaN(parseFloat(tmpWattage)) || parseFloat(tmpWattage) < 0 ||
-        isNaN(parseFloat(tmpMargin)) || parseFloat(tmpMargin) < 0 ||
-        isNaN(parseFloat(tmpFee)) || parseFloat(tmpFee) < 0 ||
-        (tmpTax && (isNaN(parseFloat(tmpTax)) || parseFloat(tmpTax) < 0))
-      ) {
-        Alert.alert("Error", "All variables must be valid positive numbers.");
-        return false;
-      }
+      return (
+        validateNumericField(tmpRate, "Electricity Rate") &&
+        validateNumericField(tmpWattage, "Printer Wattage") &&
+        validateNumericField(tmpMargin, "Profit Margin") &&
+        validateNumericField(tmpFee, "Wear & Tear Fee") &&
+        (!tmpTax || !isNaN(parseFloat(tmpTax)) && parseFloat(tmpTax) >= 0)
+      );
     }
     return true;
   };
@@ -156,33 +151,31 @@ const SettingsScreen = () => {
   };
 
   const handleNext = () => {
-    if (validateStep(currentStep)) {
-      if (currentStep === 1) {
-        setBusinessName(tmpName);
-        setBusinessEmail(tmpEmail);
-        setBusinessPhone(tmpPhone);
-        setBusinessDescription(tmpDesc);
-        setCurrentStep(2);
-        scrollToTop();
-      } else if (currentStep === 2) {
-        setCurrencySymbol(tmpCurrency);
-        setWeightUnit(tmpUnit);
-        setPdfFont(tmpFont);
-        setCurrentStep(3);
-        scrollToTop();
-      }
+    if (!validateStep(currentStep)) return;
+    if (currentStep === 1) {
+      setBusinessName(tmpName);
+      setBusinessEmail(tmpEmail);
+      setBusinessPhone(tmpPhone);
+      setBusinessDescription(tmpDesc);
+      setCurrentStep(2);
+      scrollToTop();
+    } else if (currentStep === 2) {
+      setCurrencySymbol(tmpCurrency);
+      setWeightUnit(tmpUnit);
+      setPdfFont(tmpFont);
+      setCurrentStep(3);
+      scrollToTop();
     }
   };
 
   const handleFinishSetup = () => {
-    if (validateStep(3)) {
-      setElectricityRate(parseFloat(tmpRate) || 0);
-      setPrinterWattage(parseFloat(tmpWattage) || 0);
-      setProfitMargin(parseFloat(tmpMargin) || 0);
-      setWearAndTearFee(parseFloat(tmpFee) || 0);
-      setTaxRate(parseFloat(tmpTax) || 0);
-      completeSetup();
-    }
+    if (!validateStep(3)) return;
+    setElectricityRate(parseFloat(tmpRate) || 0);
+    setPrinterWattage(parseFloat(tmpWattage) || 0);
+    setProfitMargin(parseFloat(tmpMargin) || 0);
+    setWearAndTearFee(parseFloat(tmpFee) || 0);
+    setTaxRate(parseFloat(tmpTax) || 0);
+    completeSetup();
   };
 
   const handleSaveProfile = () => {
@@ -190,37 +183,33 @@ const SettingsScreen = () => {
       Alert.alert("Required", "Business Name is required.");
       return;
     }
-    if (tmpEmail && !validateEmail(tmpEmail)) {
-      Alert.alert("Error", "Invalid email format.");
+    if (!validateEmail(tmpEmail)) {
+      Alert.alert("Invalid Email", "Please enter a valid email address.");
       return;
     }
     setBusinessName(tmpName);
     setBusinessEmail(tmpEmail);
     setBusinessPhone(tmpPhone);
     setBusinessDescription(tmpDesc);
-    setEditingProfile(false);
+    animate(() => setEditingProfile(false));
   };
 
   const handleSavePrefs = () => {
     setCurrencySymbol(tmpCurrency);
     setWeightUnit(tmpUnit);
     setPdfFont(tmpFont);
-    setEditingPrefs(false);
+    animate(() => setEditingPrefs(false));
   };
 
   const handleSaveVars = () => {
-    if (!tmpRate || !tmpWattage || !tmpMargin || !tmpFee) {
-      Alert.alert("Required", "Missing fields.");
-      return;
-    }
     if (
-      isNaN(parseFloat(tmpRate)) || parseFloat(tmpRate) < 0 ||
-      isNaN(parseFloat(tmpWattage)) || parseFloat(tmpWattage) < 0 ||
-      isNaN(parseFloat(tmpMargin)) || parseFloat(tmpMargin) < 0 ||
-      isNaN(parseFloat(tmpFee)) || parseFloat(tmpFee) < 0 ||
-      (tmpTax && (isNaN(parseFloat(tmpTax)) || parseFloat(tmpTax) < 0))
-    ) {
-      Alert.alert("Error", "All variables must be valid positive numbers.");
+      !validateNumericField(tmpRate, "Electricity Rate") ||
+      !validateNumericField(tmpWattage, "Printer Wattage") ||
+      !validateNumericField(tmpMargin, "Profit Margin") ||
+      !validateNumericField(tmpFee, "Wear & Tear Fee")
+    ) return;
+    if (tmpTax && (isNaN(parseFloat(tmpTax)) || parseFloat(tmpTax) < 0)) {
+      Alert.alert("Invalid Value", "Tax Rate must be a valid positive number.");
       return;
     }
     setElectricityRate(parseFloat(tmpRate) || 0);
@@ -228,971 +217,679 @@ const SettingsScreen = () => {
     setProfitMargin(parseFloat(tmpMargin) || 0);
     setWearAndTearFee(parseFloat(tmpFee) || 0);
     setTaxRate(parseFloat(tmpTax) || 0);
-    setEditingVars(false);
+    animate(() => setEditingVars(false));
   };
 
-  const DisplayBox = ({
-    label,
-    value,
-  }: {
-    label: string;
-    value: string | number;
-  }) => (
-    <View style={[styles.displayBox, { borderBottomColor: theme.border }]}>
-      <Text style={[styles.displayLabel, { color: theme.textSecondary }]}>
-        {label}
-      </Text>
-      <Text style={[styles.displayText, { color: theme.text }]}>
-        {value || "—"}
-      </Text>
-    </View>
-  );
+  /** Trigger LayoutAnimation then run a state update for smooth section transitions. */
+  const animate = (update: () => void) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    update();
+  };
 
-  return (
-    <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: theme.background }]}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1 }}>
+  const handlePickLogo = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Required",
+          "Please allow access to your photo library in your device settings to add a logo.",
+        );
+        return;
+      }
+      setIsUploadingLogo(true);
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: "images",
+        allowsEditing: true,
+        aspect: [3, 1],
+        quality: 0.4,
+        base64: true,
+      });
+      if (!result.canceled && result.assets[0].base64) {
+        setBusinessLogo(
+          `data:image/jpeg;base64,${result.assets[0].base64}`,
+        );
+      }
+    } catch {
+      Alert.alert("Error", "Could not load the image. Please try again.");
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    Alert.alert("Remove Logo", "Remove your business logo?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: () => setBusinessLogo(""),
+      },
+    ]);
+  };
+
+  // ── SETUP WIZARD ──────────────────────────────────────────────────────────
+  if (!isSetupComplete) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
         <ScrollView
           ref={scrollViewRef}
           contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled">
-          {!isSetupComplete ? (
-            <>
-              <Text style={[styles.header, { color: theme.text }]}>
-                SETUP WIZARD
-              </Text>
-              <Text
-                style={[styles.stepIndicator, { color: theme.textSecondary }]}>
-                STEP {currentStep} OF 3
-              </Text>
+          keyboardShouldPersistTaps="handled"
+          onScroll={onScrollViewScroll}
+          scrollEventThrottle={16}>
+          <Text style={[styles.header, { color: theme.text }]}>
+            SETUP WIZARD
+          </Text>
+          <Text style={[styles.stepIndicator, { color: theme.textSecondary }]}>
+            STEP {currentStep} OF 3
+          </Text>
 
-              {currentStep === 1 && (
-                <View
-                  style={[
-                    styles.section,
-                    {
-                      backgroundColor: theme.surface,
-                      borderColor: theme.border,
-                    },
-                  ]}>
-                  <Text style={[styles.stepTitle, { color: theme.primary }]}>
-                    1. BUSINESS PROFILE
-                  </Text>
-                  <View style={styles.inputGroup}>
-                    <Text style={[styles.label, { color: theme.text }]}>
-                      Business Name *
-                    </Text>
-                    <TextInput
-                      style={[
-                        styles.input,
-                        {
-                          color: theme.text,
-                          borderColor: theme.border,
-                          backgroundColor: theme.background,
-                        },
-                      ]}
-                      value={tmpName}
-                      onChangeText={setTmpName}
-                    />
-                    <Text
-                      style={[
-                        styles.helperText,
-                        { color: theme.textSecondary },
-                      ]}>
-                      Required. Main header on invoice.
-                    </Text>
-                  </View>
-                  <View style={styles.inputGroup}>
-                    <Text style={[styles.label, { color: theme.text }]}>
-                      Email (Optional)
-                    </Text>
-                    <TextInput
-                      style={[
-                        styles.input,
-                        {
-                          color: theme.text,
-                          borderColor: theme.border,
-                          backgroundColor: theme.background,
-                        },
-                      ]}
-                      value={tmpEmail}
-                      onChangeText={setTmpEmail}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                    />
-                    <Text
-                      style={[
-                        styles.helperText,
-                        { color: theme.textSecondary },
-                      ]}>
-                      Appears on PDF invoice.
-                    </Text>
-                  </View>
-                  <View style={styles.inputGroup}>
-                    <Text style={[styles.label, { color: theme.text }]}>
-                      Phone (Optional)
-                    </Text>
-                    <TextInput
-                      style={[
-                        styles.input,
-                        {
-                          color: theme.text,
-                          borderColor: theme.border,
-                          backgroundColor: theme.background,
-                        },
-                      ]}
-                      value={tmpPhone}
-                      onChangeText={handlePhoneChange}
-                      keyboardType="phone-pad"
-                    />
-                    <Text
-                      style={[
-                        styles.helperText,
-                        { color: theme.textSecondary },
-                      ]}>
-                      Appears on PDF invoice.
-                    </Text>
-                  </View>
-                  <View style={styles.inputGroup}>
-                    <Text style={[styles.label, { color: theme.text }]}>
-                      Description (Optional)
-                    </Text>
-                    <TextInput
-                      style={[
-                        styles.input,
-                        {
-                          color: theme.text,
-                          borderColor: theme.border,
-                          backgroundColor: theme.background,
-                          height: 60,
-                        },
-                      ]}
-                      value={tmpDesc}
-                      onChangeText={setTmpDesc}
-                      multiline
-                    />
-                    <Text
-                      style={[
-                        styles.helperText,
-                        { color: theme.textSecondary },
-                      ]}>
-                      Short tagline below name.
-                    </Text>
-                  </View>
+          {currentStep === 1 && (
+            <View style={[styles.section, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Text style={[styles.stepTitle, { color: theme.primary }]}>
+                1. YOUR PROFILE
+              </Text>
+              <LabeledInput
+                ref={nameRef}
+                label="Your Name / Business Name *"
+                helper="Required. Appears as the main header on invoices."
+                value={tmpName}
+                onChangeText={setTmpName}
+                onFocus={onFocusFor(nameRef)}
+              />
+              <LabeledInput
+                ref={emailRef}
+                label="Email (Optional)"
+                helper="Appears on PDF invoices if you choose to show it."
+                value={tmpEmail}
+                onChangeText={setTmpEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                onFocus={onFocusFor(emailRef)}
+              />
+              <LabeledInput
+                ref={phoneRef}
+                label="Phone (Optional)"
+                helper="Appears on PDF invoices if you choose to show it."
+                value={tmpPhone}
+                onChangeText={handlePhoneChange}
+                keyboardType="phone-pad"
+                onFocus={onFocusFor(phoneRef)}
+              />
+              <LabeledInput
+                ref={descRef}
+                label="Short Description (Optional)"
+                helper="A tagline shown below your name on invoices."
+                value={tmpDesc}
+                onChangeText={setTmpDesc}
+                multiline
+                inputHeight={70}
+                onFocus={onFocusFor(descRef)}
+              />
+              <TouchableOpacity
+                style={[styles.nextBtn, { backgroundColor: theme.primary }]}
+                onPress={handleNext}>
+                <Text style={[styles.btnText, { color: theme.background }]}>
+                  CONTINUE →
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {currentStep === 2 && (
+            <View style={[styles.section, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Text style={[styles.stepTitle, { color: theme.primary }]}>
+                2. PREFERENCES
+              </Text>
+              <SegmentedControl
+                label="Currency *"
+                options={["USD", "EUR", "GBP"]}
+                value={revCurrencyMap[tmpCurrency] || "USD"}
+                onChange={(v) => setTmpCurrency(currencyMap[v])}
+                helper="Used in all calculations and on invoices."
+              />
+              <SegmentedControl
+                label="Weight Unit *"
+                options={["g", "oz"]}
+                value={tmpUnit}
+                onChange={setTmpUnit}
+                helper="Unit you use when weighing your prints."
+              />
+              <SegmentedControl
+                label="PDF Font *"
+                options={["Helvetica", "Times New Roman"]}
+                value={tmpFont}
+                onChange={setTmpFont}
+                helper="Font used in generated invoice PDFs."
+              />
+              <View style={[styles.row, { marginTop: 8 }]}>
+                <TouchableOpacity
+                  style={[styles.cancelBtn, { flex: 1, marginRight: 4, backgroundColor: theme.border }]}
+                  onPress={() => { setCurrentStep(1); scrollToTop(); }}>
+                  <Text style={[styles.btnText, { color: theme.text }]}>← BACK</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.nextBtn, { flex: 2, marginLeft: 4, backgroundColor: theme.primary }]}
+                  onPress={handleNext}>
+                  <Text style={[styles.btnText, { color: theme.background }]}>CONTINUE →</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {currentStep === 3 && (
+            <View style={[styles.section, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Text style={[styles.stepTitle, { color: theme.primary }]}>
+                3. PRINT VARIABLES
+              </Text>
+              <LabeledInput
+                ref={rateRef}
+                label={`Electricity Rate (${tmpCurrency}/kWh) *`}
+                helper="Your cost per kilowatt-hour — check your utility bill."
+                value={tmpRate}
+                onChangeText={setTmpRate}
+                keyboardType="numeric"
+                onFocus={onFocusFor(rateRef)}
+              />
+              <LabeledInput
+                ref={wattageRef}
+                label="Printer Wattage (W) *"
+                helper="Average power draw of your printer in watts (usually 100–300 W)."
+                value={tmpWattage}
+                onChangeText={setTmpWattage}
+                keyboardType="numeric"
+                onFocus={onFocusFor(wattageRef)}
+              />
+              <LabeledInput
+                ref={marginRef}
+                label="Profit Margin (%) *"
+                helper="Percentage markup added on top of base costs. E.g. 20 = 20%."
+                value={tmpMargin}
+                onChangeText={setTmpMargin}
+                keyboardType="numeric"
+                onFocus={onFocusFor(marginRef)}
+              />
+              <LabeledInput
+                ref={feeRef}
+                label={`Wear & Tear Fee (${tmpCurrency}/hr) *`}
+                helper="Hourly charge to cover printer maintenance and parts."
+                value={tmpFee}
+                onChangeText={setTmpFee}
+                keyboardType="numeric"
+                onFocus={onFocusFor(feeRef)}
+              />
+              <LabeledInput
+                ref={taxRef}
+                label="Tax Rate (%) — Optional"
+                helper="Applied to the final subtotal. Leave at 0 if not applicable."
+                value={tmpTax}
+                onChangeText={setTmpTax}
+                keyboardType="numeric"
+                onFocus={onFocusFor(taxRef)}
+              />
+              <View style={[styles.row, { marginTop: 8 }]}>
+                <TouchableOpacity
+                  style={[styles.cancelBtn, { flex: 1, marginRight: 4, backgroundColor: theme.border }]}
+                  onPress={() => { setCurrentStep(2); scrollToTop(); }}>
+                  <Text style={[styles.btnText, { color: theme.text }]}>← BACK</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.nextBtn, { flex: 2, marginLeft: 4, backgroundColor: theme.primary }]}
+                  onPress={handleFinishSetup}>
+                  <Text style={[styles.btnText, { color: theme.background }]}>FINISH SETUP ✓</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          <View style={{ height: 80 }} />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // ── SETTINGS (post-setup) ─────────────────────────────────────────────────
+  return (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        onScroll={onScrollViewScroll}
+        scrollEventThrottle={16}>
+        <Text style={[styles.header, { color: theme.text }]}>SETTINGS</Text>
+
+        {/* ── USER PROFILE ── */}
+        <SectionLabel title="User Profile" />
+        <View style={[styles.section, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          {!editingProfile ? (
+            <>
+              {/* Logo Preview */}
+              {businessLogo ? (
+                <View style={styles.logoPreviewRow}>
+                  <Image
+                    source={{ uri: businessLogo }}
+                    style={styles.logoPreview}
+                    resizeMode="contain"
+                  />
                   <TouchableOpacity
-                    style={[styles.nextBtn, { backgroundColor: theme.primary }]}
-                    onPress={handleNext}>
-                    <Text style={[styles.btnText, { color: theme.background }]}>
-                      CONTINUE
+                    onPress={handleRemoveLogo}
+                    style={[styles.removeLogoBtn, { borderColor: theme.danger }]}>
+                    <Text style={[styles.removeLogoBtnText, { color: theme.danger }]}>
+                      REMOVE LOGO
                     </Text>
                   </TouchableOpacity>
                 </View>
-              )}
-
-              {currentStep === 2 && (
-                <View
-                  style={[
-                    styles.section,
-                    {
-                      backgroundColor: theme.surface,
-                      borderColor: theme.border,
-                    },
-                  ]}>
-                  <Text style={[styles.stepTitle, { color: theme.primary }]}>
-                    2. PREFERENCES
-                  </Text>
-                  <Text style={[styles.label, { color: theme.text }]}>
-                    Currency *
-                  </Text>
-                  <View
-                    style={[styles.toggleRow, { borderColor: theme.primary }]}>
-                    {["USD", "EUR", "GBP"].map((c) => (
-                      <TouchableOpacity
-                        key={c}
-                        onPress={() => setTmpCurrency(currencyMap[c])}
-                        style={[
-                          styles.toggleBtn,
-                          tmpCurrency === currencyMap[c] && {
-                            backgroundColor: theme.primary,
-                          },
-                        ]}>
-                        <Text
-                          style={[
-                            styles.toggleBtnText,
-                            { color: theme.primary },
-                            tmpCurrency === currencyMap[c] && {
-                              color: theme.background,
-                            },
-                          ]}>
-                          {c}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                  <Text
-                    style={[styles.label, { color: theme.text, marginTop: 16 }]}>
-                    Weight Unit *
-                  </Text>
-                  <View
-                    style={[styles.toggleRow, { borderColor: theme.primary }]}>
-                    {["g", "oz"].map((u) => (
-                      <TouchableOpacity
-                        key={u}
-                        onPress={() => setTmpUnit(u)}
-                        style={[
-                          styles.toggleBtn,
-                          tmpUnit === u && { backgroundColor: theme.primary },
-                        ]}>
-                        <Text
-                          style={[
-                            styles.toggleBtnText,
-                            { color: theme.primary },
-                            tmpUnit === u && { color: theme.background },
-                          ]}>
-                          {u}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                  <Text
-                    style={[styles.label, { color: theme.text, marginTop: 16 }]}>
-                    PDF Font *
-                  </Text>
-                  <View
-                    style={[styles.toggleRow, { borderColor: theme.primary }]}>
-                    {["Helvetica", "Times New Roman"].map((f) => (
-                      <TouchableOpacity
-                        key={f}
-                        onPress={() => setTmpFont(f)}
-                        style={[
-                          styles.toggleBtn,
-                          tmpFont === f && { backgroundColor: theme.primary },
-                        ]}>
-                        <Text
-                          style={[
-                            styles.toggleBtnText,
-                            { color: theme.primary },
-                            tmpFont === f && { color: theme.background },
-                          ]}>
-                          {f}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                  <View style={[styles.row, { marginTop: 24 }]}>
-                    <TouchableOpacity
-                      style={[
-                        styles.cancelBtn,
-                        {
-                          flex: 1,
-                          marginRight: 4,
-                          backgroundColor: theme.border,
-                        },
-                      ]}
-                      onPress={() => {
-                        setCurrentStep(1);
-                        scrollToTop();
-                      }}>
-                      <Text
-                        style={[styles.cancelBtnText, { color: theme.text }]}>
-                        BACK
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.nextBtn,
-                        {
-                          flex: 2,
-                          marginLeft: 4,
-                          backgroundColor: theme.primary,
-                        },
-                      ]}
-                      onPress={handleNext}>
-                      <Text
-                        style={[styles.btnText, { color: theme.background }]}>
-                        CONTINUE
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
-
-              {currentStep === 3 && (
-                <View
-                  style={[
-                    styles.section,
-                    {
-                      backgroundColor: theme.surface,
-                      borderColor: theme.border,
-                    },
-                  ]}>
-                  <Text style={[styles.stepTitle, { color: theme.primary }]}>
-                    3. PRINT VARIABLES
-                  </Text>
-                  <View style={styles.inputGroup}>
-                    <Text style={[styles.label, { color: theme.text }]}>
-                      Electricity Rate ({tmpCurrency}/kWh) *
-                    </Text>
-                    <TextInput
-                      style={[
-                        styles.input,
-                        {
-                          color: theme.text,
-                          borderColor: theme.border,
-                          backgroundColor: theme.background,
-                        },
-                      ]}
-                      value={tmpRate}
-                      onChangeText={setTmpRate}
-                      keyboardType="numeric"
-                    />
-                    <Text
-                      style={[
-                        styles.helperText,
-                        { color: theme.textSecondary },
-                      ]}>
-                      Found on local utility bill.
-                    </Text>
-                  </View>
-                  <View style={styles.inputGroup}>
-                    <Text style={[styles.label, { color: theme.text }]}>
-                      Printer Wattage (W) *
-                    </Text>
-                    <TextInput
-                      style={[
-                        styles.input,
-                        {
-                          color: theme.text,
-                          borderColor: theme.border,
-                          backgroundColor: theme.background,
-                        },
-                      ]}
-                      value={tmpWattage}
-                      onChangeText={setTmpWattage}
-                      keyboardType="numeric"
-                    />
-                    <Text
-                      style={[
-                        styles.helperText,
-                        { color: theme.textSecondary },
-                      ]}>
-                      Average power draw of printer.
-                    </Text>
-                  </View>
-                  <View style={styles.inputGroup}>
-                    <Text style={[styles.label, { color: theme.text }]}>
-                      Profit Margin (%) *
-                    </Text>
-                    <TextInput
-                      style={[
-                        styles.input,
-                        {
-                          color: theme.text,
-                          borderColor: theme.border,
-                          backgroundColor: theme.background,
-                        },
-                      ]}
-                      value={tmpMargin}
-                      onChangeText={setTmpMargin}
-                      keyboardType="numeric"
-                    />
-                    <Text
-                      style={[
-                        styles.helperText,
-                        { color: theme.textSecondary },
-                      ]}>
-                      Markup applied to base costs.
-                    </Text>
-                  </View>
-                  <View style={styles.inputGroup}>
-                    <Text style={[styles.label, { color: theme.text }]}>
-                      Wear & Tear Fee ({tmpCurrency}/hr) *
-                    </Text>
-                    <TextInput
-                      style={[
-                        styles.input,
-                        {
-                          color: theme.text,
-                          borderColor: theme.border,
-                          backgroundColor: theme.background,
-                        },
-                      ]}
-                      value={tmpFee}
-                      onChangeText={setTmpFee}
-                      keyboardType="numeric"
-                    />
-                    <Text
-                      style={[
-                        styles.helperText,
-                        { color: theme.textSecondary },
-                      ]}>
-                      Buffer for replacement parts.
-                    </Text>
-                  </View>
-                  <View style={styles.inputGroup}>
-                    <Text style={[styles.label, { color: theme.text }]}>
-                      Tax Rate (%) (Optional)
-                    </Text>
-                    <TextInput
-                      style={[
-                        styles.input,
-                        {
-                          color: theme.text,
-                          borderColor: theme.border,
-                          backgroundColor: theme.background,
-                        },
-                      ]}
-                      value={tmpTax}
-                      onChangeText={setTmpTax}
-                      keyboardType="numeric"
-                    />
-                  </View>
-                  <View style={[styles.row, { marginTop: 24 }]}>
-                    <TouchableOpacity
-                      style={[
-                        styles.cancelBtn,
-                        {
-                          flex: 1,
-                          marginRight: 4,
-                          backgroundColor: theme.border,
-                        },
-                      ]}
-                      onPress={() => {
-                        setCurrentStep(2);
-                        scrollToTop();
-                      }}>
-                      <Text
-                        style={[styles.cancelBtnText, { color: theme.text }]}>
-                        BACK
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.nextBtn,
-                        {
-                          flex: 2,
-                          marginLeft: 4,
-                          backgroundColor: theme.primary,
-                        },
-                      ]}
-                      onPress={handleFinishSetup}>
-                      <Text
-                        style={[styles.btnText, { color: theme.background }]}>
-                        FINISH SETUP
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
+              ) : null}
+              <DisplayField label="Name *" value={businessName} />
+              <DisplayField label="Email" value={businessEmail} />
+              <DisplayField label="Phone" value={businessPhone} />
+              <DisplayField label="Description" value={businessDescription} last />
+              <TouchableOpacity
+                style={styles.editLink}
+                onPress={() => animate(() => setEditingProfile(true))}>
+                <Text style={[styles.editLinkText, { color: theme.primary }]}>
+                  EDIT PROFILE
+                </Text>
+              </TouchableOpacity>
             </>
           ) : (
             <>
-              <Text style={[styles.header, { color: theme.text }]}>
-                SETTINGS
-              </Text>
-
-              <Text
-                style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-                USER PROFILE
-              </Text>
-              <View
-                style={[
-                  styles.section,
-                  { backgroundColor: theme.surface, borderColor: theme.border },
-                ]}>
-                {!editingProfile ? (
-                  <>
-                    <DisplayBox label="Business Name *" value={businessName} />
-                    <DisplayBox label="Email" value={businessEmail} />
-                    <DisplayBox label="Phone" value={businessPhone} />
-                    <DisplayBox
-                      label="Description"
-                      value={businessDescription}
+              {/* Logo management in edit mode */}
+              <View style={[styles.logoSection, { borderBottomColor: theme.border }]}>
+                <Text style={[styles.label, { color: theme.text }]}>
+                  Business Logo (Optional)
+                </Text>
+                <Text style={[styles.helperText, { color: theme.textSecondary }]}>
+                  Shown on PDF invoices. You can toggle it per invoice.
+                </Text>
+                {businessLogo ? (
+                  <View style={styles.logoRow}>
+                    <Image
+                      source={{ uri: businessLogo }}
+                      style={styles.logoPreview}
+                      resizeMode="contain"
                     />
-                    <TouchableOpacity
-                      style={styles.editLink}
-                      onPress={() => setEditingProfile(true)}>
-                      <Text
-                        style={[styles.editLinkText, { color: theme.primary }]}>
-                        EDIT PROFILE
-                      </Text>
-                    </TouchableOpacity>
-                  </>
+                    <View style={styles.logoActions}>
+                      <TouchableOpacity
+                        style={[styles.logoBtn, { backgroundColor: theme.border }]}
+                        onPress={handlePickLogo}>
+                        <Text style={[styles.logoBtnText, { color: theme.text }]}>
+                          CHANGE
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.logoBtn, { backgroundColor: theme.danger + "20" }]}
+                        onPress={handleRemoveLogo}>
+                        <Text style={[styles.logoBtnText, { color: theme.danger }]}>
+                          REMOVE
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                 ) : (
-                  <>
-                    <View style={styles.inputGroup}>
-                      <Text style={[styles.label, { color: theme.text }]}>
-                        Business Name *
+                  <TouchableOpacity
+                    style={[styles.addLogoBtn, { borderColor: theme.primary }]}
+                    onPress={handlePickLogo}
+                    disabled={isUploadingLogo}>
+                    {isUploadingLogo ? (
+                      <ActivityIndicator color={theme.primary} />
+                    ) : (
+                      <Text style={[styles.addLogoBtnText, { color: theme.primary }]}>
+                        + ADD LOGO FROM GALLERY
                       </Text>
-                      <TextInput
-                        style={[
-                          styles.input,
-                          {
-                            color: theme.text,
-                            borderColor: theme.border,
-                            backgroundColor: theme.background,
-                          },
-                        ]}
-                        value={tmpName}
-                        onChangeText={setTmpName}
-                      />
-                      <Text
-                        style={[
-                          styles.helperText,
-                          { color: theme.textSecondary },
-                        ]}>
-                        Required. Main header on invoice.
-                      </Text>
-                    </View>
-                    <View style={styles.inputGroup}>
-                      <Text style={[styles.label, { color: theme.text }]}>
-                        Email (Optional)
-                      </Text>
-                      <TextInput
-                        style={[
-                          styles.input,
-                          {
-                            color: theme.text,
-                            borderColor: theme.border,
-                            backgroundColor: theme.background,
-                          },
-                        ]}
-                        value={tmpEmail}
-                        onChangeText={setTmpEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                      />
-                      <Text
-                        style={[
-                          styles.helperText,
-                          { color: theme.textSecondary },
-                        ]}>
-                        Appears on PDF invoice.
-                      </Text>
-                    </View>
-                    <View style={styles.inputGroup}>
-                      <Text style={[styles.label, { color: theme.text }]}>
-                        Phone (Optional)
-                      </Text>
-                      <TextInput
-                        style={[
-                          styles.input,
-                          {
-                            color: theme.text,
-                            borderColor: theme.border,
-                            backgroundColor: theme.background,
-                          },
-                        ]}
-                        value={tmpPhone}
-                        onChangeText={handlePhoneChange}
-                        keyboardType="phone-pad"
-                      />
-                      <Text
-                        style={[
-                          styles.helperText,
-                          { color: theme.textSecondary },
-                        ]}>
-                        Appears on PDF invoice.
-                      </Text>
-                    </View>
-                    <View style={styles.inputGroup}>
-                      <Text style={[styles.label, { color: theme.text }]}>
-                        Description (Optional)
-                      </Text>
-                      <TextInput
-                        style={[
-                          styles.input,
-                          {
-                            color: theme.text,
-                            borderColor: theme.border,
-                            backgroundColor: theme.background,
-                            height: 60,
-                          },
-                        ]}
-                        value={tmpDesc}
-                        onChangeText={setTmpDesc}
-                        multiline
-                      />
-                      <Text
-                        style={[
-                          styles.helperText,
-                          { color: theme.textSecondary },
-                        ]}>
-                        Short tagline below name.
-                      </Text>
-                    </View>
-                    <View style={styles.row}>
-                      <TouchableOpacity
-                        style={[
-                          styles.saveBtn,
-                          {
-                            flex: 1,
-                            marginRight: 4,
-                            backgroundColor: theme.primary,
-                          },
-                        ]}
-                        onPress={handleSaveProfile}>
-                        <Text
-                          style={[styles.btnText, { color: theme.background }]}>
-                          SAVE
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[
-                          styles.cancelBtn,
-                          {
-                            flex: 1,
-                            marginLeft: 4,
-                            backgroundColor: theme.border,
-                          },
-                        ]}
-                        onPress={() => setEditingProfile(false)}>
-                        <Text
-                          style={[styles.cancelBtnText, { color: theme.text }]}>
-                          CANCEL
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </>
+                    )}
+                  </TouchableOpacity>
                 )}
               </View>
 
-              <Text
-                style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-                APP PREFERENCES
-              </Text>
-              <View
-                style={[
-                  styles.section,
-                  { backgroundColor: theme.surface, borderColor: theme.border },
-                ]}>
-                {!editingPrefs ? (
-                  <>
-                    <DisplayBox
-                      label="Currency *"
-                      value={`${revCurrencyMap[currencySymbol] || "USD"} (${currencySymbol})`}
-                    />
-                    <DisplayBox label="Weight Unit *" value={weightUnit} />
-                    <DisplayBox label="PDF Font *" value={pdfFont} />
-                    <TouchableOpacity
-                      style={styles.editLink}
-                      onPress={() => setEditingPrefs(true)}>
-                      <Text
-                        style={[styles.editLinkText, { color: theme.primary }]}>
-                        EDIT PREFERENCES
-                      </Text>
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                  <>
-                    <Text style={[styles.label, { color: theme.text }]}>
-                      Currency *
-                    </Text>
-                    <View
-                      style={[styles.toggleRow, { borderColor: theme.primary }]}>
-                      {["USD", "EUR", "GBP"].map((c) => (
-                        <TouchableOpacity
-                          key={c}
-                          onPress={() => setTmpCurrency(currencyMap[c])}
-                          style={[
-                            styles.toggleBtn,
-                            tmpCurrency === currencyMap[c] && {
-                              backgroundColor: theme.primary,
-                            },
-                          ]}>
-                          <Text
-                            style={[
-                              styles.toggleBtnText,
-                              { color: theme.primary },
-                              tmpCurrency === currencyMap[c] && {
-                                color: theme.background,
-                              },
-                            ]}>
-                            {c}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                    <Text
-                      style={[
-                        styles.label,
-                        { color: theme.text, marginTop: 16 },
-                      ]}>
-                      Weight Unit *
-                    </Text>
-                    <View
-                      style={[styles.toggleRow, { borderColor: theme.primary }]}>
-                      {["g", "oz"].map((u) => (
-                        <TouchableOpacity
-                          key={u}
-                          onPress={() => setTmpUnit(u)}
-                          style={[
-                            styles.toggleBtn,
-                            tmpUnit === u && { backgroundColor: theme.primary },
-                          ]}>
-                          <Text
-                            style={[
-                              styles.toggleBtnText,
-                              { color: theme.primary },
-                              tmpUnit === u && { color: theme.background },
-                            ]}>
-                            {u}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                    <Text
-                      style={[
-                        styles.label,
-                        { color: theme.text, marginTop: 16 },
-                      ]}>
-                      PDF Font *
-                    </Text>
-                    <View
-                      style={[styles.toggleRow, { borderColor: theme.primary }]}>
-                      {["Helvetica", "Times New Roman"].map((f) => (
-                        <TouchableOpacity
-                          key={f}
-                          onPress={() => setTmpFont(f)}
-                          style={[
-                            styles.toggleBtn,
-                            tmpFont === f && { backgroundColor: theme.primary },
-                          ]}>
-                          <Text
-                            style={[
-                              styles.toggleBtnText,
-                              { color: theme.primary },
-                              tmpFont === f && { color: theme.background },
-                            ]}>
-                            {f}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                    <View style={(styles.row, { marginTop: 24 })}>
-                      <TouchableOpacity
-                        style={[
-                          styles.saveBtn,
-                          {
-                            flex: 1,
-                            marginRight: 4,
-                            backgroundColor: theme.primary,
-                          },
-                        ]}
-                        onPress={handleSavePrefs}>
-                        <Text
-                          style={[styles.btnText, { color: theme.background }]}>
-                          SAVE
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[
-                          styles.cancelBtn,
-                          {
-                            flex: 1,
-                            marginLeft: 4,
-                            backgroundColor: theme.border,
-                          },
-                        ]}
-                        onPress={() => setEditingPrefs(false)}>
-                        <Text
-                          style={[styles.cancelBtnText, { color: theme.text }]}>
-                          CANCEL
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </>
-                )}
-              </View>
-
-              <Text
-                style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-                PRINT VARIABLES
-              </Text>
-              <View
-                style={[
-                  styles.section,
-                  { backgroundColor: theme.surface, borderColor: theme.border },
-                ]}>
-                {!editingVars ? (
-                  <>
-                    <DisplayBox
-                      label="Electricity Rate *"
-                      value={`${currencySymbol}${electricityRate}/kWh`}
-                    />
-                    <DisplayBox
-                      label="Printer Wattage (W) *"
-                      value={`${printerWattage}W`}
-                    />
-                    <DisplayBox
-                      label="Profit Margin (%) *"
-                      value={`${profitMargin}%`}
-                    />
-                    <DisplayBox
-                      label="Wear & Tear Fee *"
-                      value={`${currencySymbol}${wearAndTearFee}/hr`}
-                    />
-                    <DisplayBox label="Tax Rate (%)" value={`${taxRate}%`} />
-                    <TouchableOpacity
-                      style={styles.editLink}
-                      onPress={() => setEditingVars(true)}>
-                      <Text
-                        style={[styles.editLinkText, { color: theme.primary }]}>
-                        EDIT VARIABLES
-                      </Text>
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                  <>
-                    {[
-                      {
-                        label: `Electricity Rate (${currencySymbol}/kWh) *`,
-                        val: tmpRate,
-                        set: setTmpRate,
-                        helper: "Found on local utility bill.",
-                      },
-                      {
-                        label: "Printer Wattage (W) *",
-                        val: tmpWattage,
-                        set: setTmpWattage,
-                        helper: "Average power draw of printer.",
-                      },
-                      {
-                        label: "Profit Margin (%) *",
-                        val: tmpMargin,
-                        set: setTmpMargin,
-                        helper: "Markup applied to base costs.",
-                      },
-                      {
-                        label: `Wear & Tear Fee (${currencySymbol}/hr) *`,
-                        val: tmpFee,
-                        set: setTmpFee,
-                        helper: "Buffer for replacement parts.",
-                      },
-                      {
-                        label: "Tax Rate (%)",
-                        val: tmpTax,
-                        set: setTmpTax,
-                        helper: "",
-                      },
-                    ].map((item, idx) => (
-                      <View key={idx} style={styles.inputGroup}>
-                        <Text style={[styles.label, { color: theme.text }]}>
-                          {item.label}
-                        </Text>
-                        <TextInput
-                          style={[
-                            styles.input,
-                            {
-                              color: theme.text,
-                              borderColor: theme.border,
-                              backgroundColor: theme.background,
-                            },
-                          ]}
-                          value={item.val}
-                          onChangeText={item.set}
-                          keyboardType="numeric"
-                        />
-                        {item.helper ? (
-                          <Text
-                            style={[
-                              styles.helperText,
-                              { color: theme.textSecondary },
-                            ]}>
-                            {item.helper}
-                          </Text>
-                        ) : null}
-                      </View>
-                    ))}
-                    <View style={styles.row}>
-                      <TouchableOpacity
-                        style={[
-                          styles.saveBtn,
-                          {
-                            flex: 1,
-                            marginRight: 4,
-                            backgroundColor: theme.primary,
-                          },
-                        ]}
-                        onPress={handleSaveVars}>
-                        <Text
-                          style={[styles.btnText, { color: theme.background }]}>
-                          SAVE
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[
-                          styles.cancelBtn,
-                          {
-                            flex: 1,
-                            marginLeft: 4,
-                            backgroundColor: theme.border,
-                          },
-                        ]}
-                        onPress={() => setEditingVars(false)}>
-                        <Text
-                          style={[styles.cancelBtnText, { color: theme.text }]}>
-                          CANCEL
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </>
-                )}
-              </View>
-
-              <View
-                style={[
-                  styles.section,
-                  {
-                    backgroundColor: theme.surface,
-                    borderColor: theme.border,
-                    marginTop: 20,
-                  },
-                ]}>
+              <LabeledInput
+                ref={nameRef}
+                label="Name / Business Name *"
+                helper="Required. Main header on invoices."
+                value={tmpName}
+                onChangeText={setTmpName}
+                onFocus={onFocusFor(nameRef)}
+              />
+              <LabeledInput
+                ref={emailRef}
+                label="Email (Optional)"
+                helper="Appears on PDF invoices."
+                value={tmpEmail}
+                onChangeText={setTmpEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                onFocus={onFocusFor(emailRef)}
+              />
+              <LabeledInput
+                ref={phoneRef}
+                label="Phone (Optional)"
+                helper="Appears on PDF invoices."
+                value={tmpPhone}
+                onChangeText={handlePhoneChange}
+                keyboardType="phone-pad"
+                onFocus={onFocusFor(phoneRef)}
+              />
+              <LabeledInput
+                ref={descRef}
+                label="Description (Optional)"
+                helper="Short tagline shown below your name on invoices."
+                value={tmpDesc}
+                onChangeText={setTmpDesc}
+                multiline
+                inputHeight={70}
+                onFocus={onFocusFor(descRef)}
+              />
+              <View style={styles.row}>
                 <TouchableOpacity
-                  style={[styles.dangerBtn, { borderColor: theme.danger }]}
-                  onPress={() =>
-                    Alert.alert("Clear", "Delete history?", [
-                      { text: "Cancel" },
-                      {
-                        text: "Clear",
-                        style: "destructive",
-                        onPress: clearAllQuotes,
-                      },
-                    ])
-                  }>
-                  <Text style={[styles.dangerBtnText, { color: theme.danger }]}>
-                    CLEAR EXPORT HISTORY
-                  </Text>
+                  style={[styles.saveBtn, { flex: 1, marginRight: 4, backgroundColor: theme.primary }]}
+                  onPress={handleSaveProfile}>
+                  <Text style={[styles.btnText, { color: theme.background }]}>SAVE</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[
-                    styles.dangerBtn,
-                    { borderColor: theme.danger, marginTop: 12 },
-                  ]}
-                  onPress={() =>
-                    Alert.alert("Reset", "Factory reset app?", [
-                      { text: "Cancel" },
-                      {
-                        text: "Reset",
-                        style: "destructive",
-                        onPress: factoryReset,
-                      },
-                    ])
-                  }>
-                  <Text style={[styles.dangerBtnText, { color: theme.danger }]}>
-                    FACTORY RESET APP
-                  </Text>
+                  style={[styles.cancelBtn, { flex: 1, marginLeft: 4, backgroundColor: theme.border }]}
+                  onPress={() => animate(() => setEditingProfile(false))}>
+                  <Text style={[styles.btnText, { color: theme.text }]}>CANCEL</Text>
                 </TouchableOpacity>
               </View>
             </>
           )}
-          {/* Spacer to allow scrolling past the keyboard */}
-          <View style={{ height: 300 }} />
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </View>
+
+        {/* ── APP PREFERENCES ── */}
+        <SectionLabel title="App Preferences" />
+        <View style={[styles.section, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          {!editingPrefs ? (
+            <>
+              <DisplayField label="Currency" value={`${revCurrencyMap[currencySymbol] || "USD"} (${currencySymbol})`} />
+              <DisplayField label="Weight Unit" value={weightUnit} />
+              <DisplayField label="PDF Font" value={pdfFont} last />
+              <TouchableOpacity
+                style={styles.editLink}
+                onPress={() => animate(() => setEditingPrefs(true))}>
+                <Text style={[styles.editLinkText, { color: theme.primary }]}>
+                  EDIT PREFERENCES
+                </Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <SegmentedControl
+                label="Currency *"
+                options={["USD", "EUR", "GBP"]}
+                value={revCurrencyMap[tmpCurrency] || "USD"}
+                onChange={(v) => setTmpCurrency(currencyMap[v])}
+                helper="Used in all calculations and on invoices."
+              />
+              <SegmentedControl
+                label="Weight Unit *"
+                options={["g", "oz"]}
+                value={tmpUnit}
+                onChange={setTmpUnit}
+                helper="Unit used when entering model weight in the calculator."
+              />
+              <SegmentedControl
+                label="PDF Font *"
+                options={["Helvetica", "Times New Roman"]}
+                value={tmpFont}
+                onChange={setTmpFont}
+                helper="Font used in generated invoice PDFs."
+              />
+              <View style={styles.row}>
+                <TouchableOpacity
+                  style={[styles.saveBtn, { flex: 1, marginRight: 4, backgroundColor: theme.primary }]}
+                  onPress={handleSavePrefs}>
+                  <Text style={[styles.btnText, { color: theme.background }]}>SAVE</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.cancelBtn, { flex: 1, marginLeft: 4, backgroundColor: theme.border }]}
+                  onPress={() => animate(() => setEditingPrefs(false))}>
+                  <Text style={[styles.btnText, { color: theme.text }]}>CANCEL</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </View>
+
+        {/* ── PRINT VARIABLES ── */}
+        <SectionLabel title="Print Variables" />
+        <View style={[styles.section, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          {!editingVars ? (
+            <>
+              <DisplayField label="Electricity Rate" value={`${currencySymbol}${electricityRate}/kWh`} />
+              <DisplayField label="Printer Wattage" value={`${printerWattage} W`} />
+              <DisplayField label="Profit Margin" value={`${profitMargin}%`} />
+              <DisplayField label="Wear & Tear Fee" value={`${currencySymbol}${wearAndTearFee}/hr`} />
+              <DisplayField label="Tax Rate" value={`${taxRate}%`} last />
+              <TouchableOpacity
+                style={styles.editLink}
+                onPress={() => animate(() => setEditingVars(true))}>
+                <Text style={[styles.editLinkText, { color: theme.primary }]}>
+                  EDIT VARIABLES
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.formulaLink}
+                onPress={() => setShowFormula(true)}>
+                <Text style={[styles.formulaLinkText, { color: theme.textSecondary }]}>
+                  HOW IS THIS CALCULATED?
+                </Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <LabeledInput
+                ref={rateRef}
+                label={`Electricity Rate (${currencySymbol}/kWh) *`}
+                helper="Your cost per kilowatt-hour — check your utility bill."
+                value={tmpRate}
+                onChangeText={setTmpRate}
+                keyboardType="numeric"
+                onFocus={onFocusFor(rateRef)}
+              />
+              <LabeledInput
+                ref={wattageRef}
+                label="Printer Wattage (W) *"
+                helper="Average power draw of your printer in watts (usually 100–300 W)."
+                value={tmpWattage}
+                onChangeText={setTmpWattage}
+                keyboardType="numeric"
+                onFocus={onFocusFor(wattageRef)}
+              />
+              <LabeledInput
+                ref={marginRef}
+                label="Profit Margin (%) *"
+                helper="Percentage markup added on top of base costs. E.g. 20 = 20%."
+                value={tmpMargin}
+                onChangeText={setTmpMargin}
+                keyboardType="numeric"
+                onFocus={onFocusFor(marginRef)}
+              />
+              <LabeledInput
+                ref={feeRef}
+                label={`Wear & Tear Fee (${currencySymbol}/hr) *`}
+                helper="Hourly charge to cover printer maintenance and parts replacement."
+                value={tmpFee}
+                onChangeText={setTmpFee}
+                keyboardType="numeric"
+                onFocus={onFocusFor(feeRef)}
+              />
+              <LabeledInput
+                ref={taxRef}
+                label="Tax Rate (%) — Optional"
+                helper="Applied to the final subtotal. Leave at 0 if not applicable."
+                value={tmpTax}
+                onChangeText={setTmpTax}
+                keyboardType="numeric"
+                onFocus={onFocusFor(taxRef)}
+              />
+              <View style={styles.row}>
+                <TouchableOpacity
+                  style={[styles.saveBtn, { flex: 1, marginRight: 4, backgroundColor: theme.primary }]}
+                  onPress={handleSaveVars}>
+                  <Text style={[styles.btnText, { color: theme.background }]}>SAVE</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.cancelBtn, { flex: 1, marginLeft: 4, backgroundColor: theme.border }]}
+                  onPress={() => animate(() => setEditingVars(false))}>
+                  <Text style={[styles.btnText, { color: theme.text }]}>CANCEL</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </View>
+
+        {/* ── DANGER ZONE ── */}
+        <View
+          style={[
+            styles.section,
+            {
+              backgroundColor: theme.surface,
+              borderColor: theme.border,
+              marginTop: 8,
+            },
+          ]}>
+          <TouchableOpacity
+            style={[styles.dangerBtn, { borderColor: theme.danger }]}
+            onPress={() =>
+              Alert.alert(
+                "Clear History",
+                "This will delete all saved quotes. This cannot be undone.",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  { text: "Clear", style: "destructive", onPress: clearAllQuotes },
+                ],
+              )
+            }>
+            <Text style={[styles.dangerBtnText, { color: theme.danger }]}>
+              CLEAR EXPORT HISTORY
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.dangerBtn, { borderColor: theme.danger, marginTop: 12 }]}
+            onPress={() =>
+              Alert.alert(
+                "Factory Reset",
+                "This will erase all data including your profile, materials, and quotes. This cannot be undone.",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  { text: "Reset", style: "destructive", onPress: factoryReset },
+                ],
+              )
+            }>
+            <Text style={[styles.dangerBtnText, { color: theme.danger }]}>
+              FACTORY RESET APP
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ height: 80 }} />
+      </ScrollView>
+
+      {/* ── FORMULA MODAL ── */}
+      <Modal visible={showFormula} animationType="slide">
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>
+              How Quotes Are Calculated
+            </Text>
+            <TouchableOpacity
+              onPress={() => setShowFormula(false)}
+              style={[styles.modalCloseBtn, { backgroundColor: theme.danger }]}>
+              <Text style={styles.modalCloseBtnText}>CLOSE</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={styles.modalContent}>
+
+            <Text style={[styles.formulaIntro, { color: theme.textSecondary }]}>
+              Every quote is built from five components combined step by step.
+              All inputs come from the Calculator screen and your Settings.
+            </Text>
+
+            {/* Step 1 */}
+            <View style={[styles.formulaCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Text style={[styles.formulaStep, { color: theme.primary }]}>STEP 1 — Material Cost</Text>
+              <Text style={[styles.formulaBody, { color: theme.text }]}>
+                {"If weight is in grams:\n"}
+                <Text style={styles.formulaCode}>Material Cost = (Price/kg ÷ 1000) × Weight (g)</Text>
+                {"\n\nIf weight is in ounces:\n"}
+                <Text style={styles.formulaCode}>Material Cost = (Price/kg ÷ 35.274) × Weight (oz)</Text>
+              </Text>
+              <Text style={[styles.formulaNote, { color: theme.textSecondary }]}>
+                Material price is always stored per kg. The app converts at runtime based on your weight unit setting.
+              </Text>
+            </View>
+
+            {/* Step 2 */}
+            <View style={[styles.formulaCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Text style={[styles.formulaStep, { color: theme.primary }]}>STEP 2 — Electricity Cost</Text>
+              <Text style={[styles.formulaBody, { color: theme.text }]}>
+                <Text style={styles.formulaCode}>Electricity = (Wattage ÷ 1000) × Rate ($/kWh) × Print Time (hrs)</Text>
+              </Text>
+              <Text style={[styles.formulaNote, { color: theme.textSecondary }]}>
+                Wattage and rate come from your Settings. Print time is entered in the Calculator.
+              </Text>
+            </View>
+
+            {/* Step 3 */}
+            <View style={[styles.formulaCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Text style={[styles.formulaStep, { color: theme.primary }]}>STEP 3 — Wear & Tear</Text>
+              <Text style={[styles.formulaBody, { color: theme.text }]}>
+                <Text style={styles.formulaCode}>Wear & Tear = Fee ($/hr) × Print Time (hrs)</Text>
+              </Text>
+              <Text style={[styles.formulaNote, { color: theme.textSecondary }]}>
+                This covers printer maintenance, nozzle wear, and part replacements over time.
+              </Text>
+            </View>
+
+            {/* Step 4 */}
+            <View style={[styles.formulaCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Text style={[styles.formulaStep, { color: theme.primary }]}>STEP 4 — Base Cost</Text>
+              <Text style={[styles.formulaBody, { color: theme.text }]}>
+                <Text style={styles.formulaCode}>Base Cost = Material + Electricity + Wear & Tear</Text>
+              </Text>
+              <Text style={[styles.formulaNote, { color: theme.textSecondary }]}>
+                The true cost of the print before any profit or tax.
+              </Text>
+            </View>
+
+            {/* Step 5 */}
+            <View style={[styles.formulaCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Text style={[styles.formulaStep, { color: theme.primary }]}>STEP 5 — Profit Margin</Text>
+              <Text style={[styles.formulaBody, { color: theme.text }]}>
+                <Text style={styles.formulaCode}>Subtotal = Base Cost × (1 + Margin% ÷ 100)</Text>
+              </Text>
+              <Text style={[styles.formulaNote, { color: theme.textSecondary }]}>
+                Example: a 20% margin on a $5.00 base cost gives a $6.00 subtotal.
+              </Text>
+            </View>
+
+            {/* Step 6 */}
+            <View style={[styles.formulaCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Text style={[styles.formulaStep, { color: theme.primary }]}>STEP 6 — Tax</Text>
+              <Text style={[styles.formulaBody, { color: theme.text }]}>
+                <Text style={styles.formulaCode}>Tax Amount = Subtotal × (Tax% ÷ 100)</Text>
+              </Text>
+              <Text style={[styles.formulaNote, { color: theme.textSecondary }]}>
+                Tax is applied to the subtotal (after margin). Set to 0 if not applicable.
+              </Text>
+            </View>
+
+            {/* Step 7 */}
+            <View style={[styles.formulaCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Text style={[styles.formulaStep, { color: theme.primary }]}>STEP 7 — Final Quote</Text>
+              <Text style={[styles.formulaBody, { color: theme.text }]}>
+                <Text style={styles.formulaCode}>Final Quote = Subtotal + Tax Amount</Text>
+              </Text>
+              <Text style={[styles.formulaNote, { color: theme.textSecondary }]}>
+                This is the number shown on the Calculator and on your invoice.
+              </Text>
+            </View>
+
+            <View style={{ height: 40 }} />
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -1206,43 +903,18 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     letterSpacing: -0.5,
   },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: "800",
-    marginBottom: 8,
-    letterSpacing: 1,
-  },
-  section: { padding: 16, borderRadius: 4, borderWidth: 1, marginBottom: 16 },
   stepIndicator: { fontSize: 12, fontWeight: "700", marginBottom: 20 },
-  stepTitle: { fontSize: 18, fontWeight: "800", marginBottom: 16 },
-  inputGroup: { marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: "700", marginBottom: 8 },
-  input: { borderWidth: 1, borderRadius: 4, padding: 14, fontSize: 16 },
-  helperText: { fontSize: 11, fontStyle: "italic", marginTop: 4 },
-  displayBox: { paddingVertical: 12, borderBottomWidth: 1 },
-  displayLabel: {
-    fontSize: 10,
-    fontWeight: "800",
-    marginBottom: 4,
-    textTransform: "uppercase",
-  },
-  displayText: { fontSize: 16, fontWeight: "600" },
+  stepTitle: { fontSize: 18, fontWeight: "800", marginBottom: 20 },
+  section: { padding: 16, borderRadius: 4, borderWidth: 1, marginBottom: 16 },
+  label: { fontSize: 13, fontWeight: "700", marginBottom: 6 },
+  helperText: { fontSize: 11, fontStyle: "italic", marginBottom: 10 },
+  row: { flexDirection: "row" },
   nextBtn: { padding: 16, borderRadius: 4, alignItems: "center" },
   saveBtn: { padding: 14, borderRadius: 4, alignItems: "center" },
   cancelBtn: { padding: 14, borderRadius: 4, alignItems: "center" },
-  btnText: { fontWeight: "800", fontSize: 14, letterSpacing: 1 },
-  cancelBtnText: { fontWeight: "800", fontSize: 14 },
-  editLink: { marginTop: 12, alignItems: "center" },
+  btnText: { fontWeight: "800", fontSize: 14, letterSpacing: 0.5 },
+  editLink: { marginTop: 12, alignItems: "center", paddingVertical: 8 },
   editLinkText: { fontWeight: "800", fontSize: 12, letterSpacing: 1 },
-  row: { flexDirection: "row" },
-  toggleRow: {
-    flexDirection: "row",
-    borderRadius: 4,
-    overflow: "hidden",
-    borderWidth: 1,
-  },
-  toggleBtn: { flex: 1, padding: 12, alignItems: "center" },
-  toggleBtnText: { fontWeight: "800", fontSize: 13 },
   dangerBtn: {
     padding: 16,
     borderRadius: 4,
@@ -1250,6 +922,82 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   dangerBtnText: { fontWeight: "800", fontSize: 12, letterSpacing: 1 },
+
+  // Logo
+  logoPreviewRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "transparent",
+  },
+  logoPreview: {
+    width: 120,
+    height: 40,
+    marginRight: 12,
+  },
+  removeLogoBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 4,
+    borderWidth: 1,
+  },
+  removeLogoBtnText: { fontSize: 11, fontWeight: "800" },
+  logoSection: {
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+  },
+  logoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+  },
+  logoActions: { flexDirection: "row", marginLeft: 12, gap: 8 },
+  logoBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 4,
+  },
+  logoBtnText: { fontSize: 11, fontWeight: "800" },
+  addLogoBtn: {
+    marginTop: 10,
+    padding: 14,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    alignItems: "center",
+  },
+  addLogoBtnText: { fontSize: 13, fontWeight: "800" },
+
+  // Formula link
+  formulaLink: { marginTop: 4, alignItems: "center", paddingVertical: 8 },
+  formulaLinkText: { fontWeight: "700", fontSize: 11, letterSpacing: 0.5, textDecorationLine: "underline" },
+
+  // Formula modal
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  modalTitle: { fontSize: 18, fontWeight: "800" },
+  modalCloseBtn: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 4 },
+  modalCloseBtnText: { color: "#fff", fontWeight: "800", fontSize: 12 },
+  modalContent: { padding: 16 },
+  formulaIntro: { fontSize: 13, lineHeight: 20, marginBottom: 16, fontStyle: "italic" },
+  formulaCard: {
+    padding: 14,
+    borderRadius: 4,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  formulaStep: { fontSize: 12, fontWeight: "800", letterSpacing: 0.5, marginBottom: 10 },
+  formulaBody: { fontSize: 14, lineHeight: 22, marginBottom: 8 },
+  formulaCode: { fontFamily: "monospace", fontWeight: "700" },
+  formulaNote: { fontSize: 11, fontStyle: "italic", lineHeight: 16 },
 });
 
 export default SettingsScreen;

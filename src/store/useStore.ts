@@ -6,7 +6,12 @@ export interface MaterialProfile {
   id: string;
   name: string;
   price: number;
-  unit: string; // Inherited from global weightUnit
+  unit: string;
+}
+
+export interface SavedClient {
+  id: string;
+  name: string;
 }
 
 export interface QuoteRecord {
@@ -31,6 +36,7 @@ const DEFAULT_VALUES = {
   businessEmail: "",
   businessPhone: "",
   businessDescription: "",
+  businessLogo: "",
   currencySymbol: "$",
   weightUnit: "g",
   pdfFont: "Helvetica",
@@ -39,8 +45,9 @@ const DEFAULT_VALUES = {
   profitMargin: 0,
   wearAndTearFee: 0,
   taxRate: 0,
-  materials: [],
-  recentQuotes: [],
+  materials: [] as MaterialProfile[],
+  recentQuotes: [] as QuoteRecord[],
+  savedClients: [] as SavedClient[],
 };
 
 interface StoreState {
@@ -52,11 +59,12 @@ interface StoreState {
   businessEmail: string;
   businessPhone: string;
   businessDescription: string;
+  businessLogo: string;
 
   // App Preferences
   currencySymbol: string;
-  weightUnit: string; // "g", "oz"
-  pdfFont: string; // "Helvetica" | "Times New Roman"
+  weightUnit: string;
+  pdfFont: string;
 
   // Print Variables
   electricityRate: number;
@@ -68,6 +76,7 @@ interface StoreState {
   // Data
   materials: MaterialProfile[];
   recentQuotes: QuoteRecord[];
+  savedClients: SavedClient[];
 
   // Actions
   completeSetup: () => void;
@@ -75,6 +84,7 @@ interface StoreState {
   setBusinessEmail: (email: string) => void;
   setBusinessPhone: (phone: string) => void;
   setBusinessDescription: (desc: string) => void;
+  setBusinessLogo: (uri: string) => void;
   setCurrencySymbol: (symbol: string) => void;
   setWeightUnit: (unit: string) => void;
   setPdfFont: (font: string) => void;
@@ -96,6 +106,9 @@ interface StoreState {
   clearOldQuotes: () => void;
   clearAllQuotes: () => void;
   factoryReset: () => void;
+
+  addSavedClient: (name: string) => void;
+  removeSavedClient: (id: string) => void;
 }
 
 const EXPIRE_TIME = 12 * 60 * 60 * 1000; // 12 hours
@@ -110,6 +123,7 @@ export const useStore = create<StoreState>()(
       setBusinessEmail: (email) => set({ businessEmail: email }),
       setBusinessPhone: (phone) => set({ businessPhone: phone }),
       setBusinessDescription: (desc) => set({ businessDescription: desc }),
+      setBusinessLogo: (uri) => set({ businessLogo: uri }),
       setCurrencySymbol: (symbol) => set({ currencySymbol: symbol }),
       setWeightUnit: (unit) => set({ weightUnit: unit }),
       setPdfFont: (font) => set({ pdfFont: font }),
@@ -123,7 +137,11 @@ export const useStore = create<StoreState>()(
         set((state) => ({
           materials: [
             ...state.materials,
-            { ...material, id: Date.now().toString(), unit: state.weightUnit },
+            {
+              ...material,
+              id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              unit: state.weightUnit,
+            },
           ],
         })),
 
@@ -144,16 +162,14 @@ export const useStore = create<StoreState>()(
           const now = Date.now();
           const newQuote: QuoteRecord = {
             ...quote,
-            id: now.toString(),
+            id: `${now}-${Math.random().toString(36).slice(2, 6)}`,
             timestamp: now,
             currencySymbol: state.currencySymbol,
           };
           const filteredHistory = state.recentQuotes.filter(
             (q) => now - q.timestamp < EXPIRE_TIME,
           );
-          return {
-            recentQuotes: [newQuote, ...filteredHistory],
-          };
+          return { recentQuotes: [newQuote, ...filteredHistory] };
         }),
 
       clearOldQuotes: () =>
@@ -169,6 +185,22 @@ export const useStore = create<StoreState>()(
       clearAllQuotes: () => set({ recentQuotes: [] }),
 
       factoryReset: () => set(DEFAULT_VALUES),
+
+      addSavedClient: (name) =>
+        set((state) => ({
+          savedClients: [
+            ...state.savedClients,
+            {
+              id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              name: name.trim(),
+            },
+          ],
+        })),
+
+      removeSavedClient: (id) =>
+        set((state) => ({
+          savedClients: state.savedClients.filter((c) => c.id !== id),
+        })),
     }),
     {
       name: "3d-quote-storage",

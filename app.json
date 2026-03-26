@@ -21,8 +21,17 @@
         "backgroundImage": "./assets/android-icon-background.png"
       },
       "package": "com.basselfad.quote3d",
-      "versionCode": 1
+      "versionCode": 1,
+      "softwareKeyboardLayoutMode": "resize"
     },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow 3D Quote Pro to access your photos to set a business logo."
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "98d18ad3-8757-44b7-a612-79fa135990b6"
