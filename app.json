@@ -21,7 +21,6 @@
         "backgroundImage": "./assets/android-icon-background.png"
       },
       "package": "com.basselfad.quote3d",
-      "versionCode": 2,
       "softwareKeyboardLayoutMode": "resize"
     },
     "plugins": [
